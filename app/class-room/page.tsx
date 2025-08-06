@@ -21,6 +21,9 @@ export default function ChromaDocsClone() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [sidebarSection, setSidebarSection] = useState<
+    "lesson" | "exercise" | "reference"
+  >("lesson");
 
   useEffect(() => {
     setMounted(true);
@@ -106,24 +109,39 @@ export default function ChromaDocsClone() {
       {/* Secondary Navigation Bar */}
       <nav className="border-t border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
         <div className="flex items-center gap-6 px-4 py-2">
-          <Link
-            href="#"
-            className="flex items-center gap-2 text-red-500 font-medium hover:text-red-600 transition-colors"
+          <button
+            type="button"
+            className={`flex items-center gap-2 font-medium transition-colors ${
+              sidebarSection === "lesson"
+                ? "text-red-500 hover:text-red-600"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setSidebarSection("lesson")}
           >
             <span>📄</span> Lesson
-          </Link>
-          <Link
-            href="#"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          </button>
+          <button
+            type="button"
+            className={`flex items-center gap-2 font-medium transition-colors ${
+              sidebarSection === "exercise"
+                ? "text-red-500 hover:text-red-600"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setSidebarSection("exercise")}
           >
             <span>💪</span> Exercises
-          </Link>
-          <Link
-            href="#"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          </button>
+          <button
+            type="button"
+            className={`flex items-center gap-2 font-medium transition-colors ${
+              sidebarSection === "reference"
+                ? "text-red-500 hover:text-red-600"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            onClick={() => setSidebarSection("reference")}
           >
             <span>📚</span> Reference
-          </Link>
+          </button>
         </div>
       </nav>
 
@@ -131,7 +149,7 @@ export default function ChromaDocsClone() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
         <aside className="w-64 border-r bg-muted/30 flex-shrink-0 overflow-y-auto">
-          <ClassRoomSidebar />
+          <ClassRoomSidebar section={sidebarSection} />
         </aside>
 
         {/* Main Content */}
