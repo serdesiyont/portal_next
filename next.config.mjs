@@ -1,3 +1,5 @@
+import { ALL } from 'dns'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
@@ -9,6 +11,7 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-}
+  allowedDevOrigins: ["*", "192.168.8.97"],
+};
 
 export default nextConfig
