@@ -72,13 +72,20 @@ function parseMarkdownHeadings(markdown: string): SidebarItem[] {
   return items;
 }
 
-export async function fetchLesson(): Promise<LessonContent> {
-  const res = await fetch("/resources/lesson.md");
+export async function fetchLesson(filename: string): Promise<LessonContent> {
+  const res = await fetch(`/resources/${filename}`);
   const raw = await res.text();
   return {
     raw,
     sidebar: parseMarkdownHeadings(raw),
   };
+}
+
+// New function to fetch the list of lesson files
+export async function fetchLessonList(): Promise<string[]> {
+  const res = await fetch(`/resources/lessons.json`);
+  const data = await res.json();
+  return data.lessons;
 }
 
 export { slugify };

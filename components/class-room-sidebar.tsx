@@ -1,80 +1,198 @@
 "use client";
+import { fetchLesson, fetchLessonList, SidebarItem } from "@/lib/lesson-loader";
 import { useEffect, useState } from "react";
-import { fetchLesson, SidebarItem } from "@/lib/lesson-loader";
+import Link from "next/link";
+
+interface ClassRoomSidebarProps {
+  section: "lesson" | "exercise" | "reference";
+}
 
 interface SidebarItemWithLink extends SidebarItem {
   link?: string;
   children?: SidebarItemWithLink[];
 }
 
-const FILES = [
-  { label: "Lesson", filename: "lesson.md" },
-  { label: "Exercise", filename: "exercise.md" },
-  { label: "Reference", filename: "reference.md" },
-];
+interface LessonSidebar {
+  filename: string;
+  title: string;
+  items: SidebarItemWithLink[];
+}
 
-export function ClassRoomSidebar({ section, onFileSelect, selectedFile }: {
-  section: "lesson" | "exercise" | "reference";
-  onFileSelect: (filename: string) => void;
-  selectedFile: string;
-}) {
-  const [sidebarItems, setSidebarItems] = useState<SidebarItemWithLink[]>([]);
+export function ClassRoomSidebar({ section }: ClassRoomSidebarProps) {
+  const [lessonSidebars, setLessonSidebars] = useState<LessonSidebar[]>([]);
 
   useEffect(() => {
-    fetchLesson(selectedFile).then((lesson) => setSidebarItems(lesson.sidebar as SidebarItemWithLink[]));
-  }, [selectedFile]);
+    if (section === "lesson") {
+      const loadAllSidebars = async () => {
+        const lessonFiles = await fetchLessonList();
+        const allSidebarsData = await Promise.all(
+          lessonFiles.map(async (filename) => {
+            const lesson = await fetchLesson(filename);
+            const lessonTitle =
+              lesson.sidebar.length > 0 ? lesson.sidebar[0].title : filename;
+            return {
+              filename,
+              title: lessonTitle,
+              items: lesson.sidebar as SidebarItemWithLink[],
+            };
+          })
+        );
+        setLessonSidebars(allSidebarsData);
+      };
+      loadAllSidebars();
+    } else {
+      setLessonSidebars([]);
+    }
+  }, [section]);
 
-  return (
-    <div className="p-6">
-      <div className="mb-6 flex gap-2">
-        {FILES.map((file) => (
-          <button
-            key={file.filename}
-            onClick={() => onFileSelect(file.filename)}
-            className={`px-3 py-1 rounded ${selectedFile === file.filename ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}
-          >
-            {file.label}
-          </button>
+  if (section === "lesson") {
+    // By default, all items are open (uncollapsed)
+    const [openItems, setOpenItems] = useState<{ [key: string]: boolean }>(() => {
+      const open: { [key: string]: boolean } = {};
+      lessonSidebars.forEach((lessonSidebar) => {
+        lessonSidebar.items.forEach((item) => {
+          open[item.id] = true;
+        });
+      });
+      return open;
+    });
+
+    // Track which lesson is loaded for scroll-to-load and sidebar click
+    const [loadedLessonIndexes, setLoadedLessonIndexes] = useState<Set<number>>(new Set([0]));
+
+    // Helper to load a lesson by index (if not already loaded)
+    const loadLessonByIndex = (idx: number) => {
+      setLoadedLessonIndexes((prev) => {
+        if (prev.has(idx)) return prev;
+        const next = new Set(prev);
+        next.add(idx);
+        return next;
+      });
+    };
+
+    // Listen for sidebar link clicks to load lesson if needed
+    const handleLinkClick = (
+      e: React.MouseEvent<HTMLAnchorElement>,
+      link: string | undefined,
+      lessonIdx: number
+    ) => {
+      if (!link) return;
+      e.preventDefault();
+      loadLessonByIndex(lessonIdx);
+      setTimeout(() => {
+        const id = link.replace(/^#/, "");
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+          window.history.pushState(null, "", link);
+        }
+      }, 0);
+    };
+
+    // Pass loadedLessonIndexes to main content via custom event
+    useEffect(() => {
+      window.dispatchEvent(
+        new CustomEvent("sidebar-load-lessons", { detail: Array.from(loadedLessonIndexes) })
+      );
+    }, [loadedLessonIndexes]);
+
+    return (
+      <div className="p-6">
+        {lessonSidebars.map((lessonSidebar, lessonIdx) => (
+          <div key={lessonSidebar.filename} className="mb-6">
+            {lessonSidebar.items.map((item) => (
+              <div key={item.id} className="mb-4">
+                <button
+                  type="button"
+                  onClick={() => setOpenItems((prev) => ({ ...prev, [item.id]: !prev[item.id] }))}
+                  className="font-semibold mb-2 w-full text-left hover:text-primary transition-colors flex items-center gap-2"
+                  aria-expanded={!!openItems[item.id]}
+                >
+                  <span>{item.title}</span>
+                  {item.children && (
+                    <span className="ml-1 text-xs">
+                      {openItems[item.id] ? "▼" : "▶"}
+                    </span>
+                  )}
+                </button>
+                {item.children && openItems[item.id] && (
+                  <ul className="space-y-1 text-sm">
+                    {item.children.map((child) => (
+                      <li key={child.id}>
+                        <a
+                          href={child.link}
+                          onClick={(e) => handleLinkClick(e, child.link, lessonIdx)}
+                          className="text-muted-foreground block py-1 px-2 rounded-md hover:text-foreground hover:bg-muted/50 transition-colors"
+                        >
+                          {child.title}
+                        </a>
+                        {child.children && (
+                          <ul className="ml-4">
+                            {child.children.map((sub) => (
+                              <li key={sub.id}>
+                                <a
+                                  href={sub.link}
+                                  onClick={(e) => handleLinkClick(e, sub.link, lessonIdx)}
+                                  className="text-xs text-muted-foreground block py-1 px-2 rounded-md hover:text-foreground hover:bg-muted/50 transition-colors"
+                                >
+                                  {sub.title}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
         ))}
       </div>
-      {sidebarItems.map((item) => (
-        <div key={item.id} className="mb-4">
-          <a
-            href={item.link}
-            className="font-semibold mb-2 block hover:text-primary transition-colors"
-          >
-            {item.title}
-          </a>
-          {item.children && (
-            <ul className="space-y-1 text-sm">
-              {item.children.map((child) => (
-                <li key={child.id}>
-                  <a
-                    href={child.link}
-                    className="text-muted-foreground block py-1 px-2 rounded-md hover:text-foreground hover:bg-muted/50 transition-colors"
-                  >
-                    {child.title}
-                  </a>
-                  {child.children && (
-                    <ul className="ml-4">
-                      {child.children.map((sub) => (
-                        <li key={sub.id}>
-                          <a
-                            href={sub.link}
-                            className="text-xs text-muted-foreground block py-1 px-2 rounded-md hover:text-foreground hover:bg-muted/50 transition-colors"
-                          >
-                            {sub.title}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+    );
+  }
+  if (section === "exercise") {
+    return (
+      <div className="p-6">
+        {/* Exercise Sidebar Content */}
+        <div className="mb-6">
+          <h3 className="font-semibold mb-2">Exercises</h3>
+          <ul className="space-y-1 text-sm">
+            <li>
+              <Link
+                href="#"
+                className="text-muted-foreground hover:text-foreground block py-1 px-2 rounded-md hover:bg-muted/50 transition-colors"
+              >
+                Exercise 1
+              </Link>
+            </li>
+            {/* ...other exercise links... */}
+          </ul>
         </div>
-      ))}
-    </div>
-  );
+      </div>
+    );
+  }
+  if (section === "reference") {
+    return (
+      <div className="p-6">
+        {/* Reference Sidebar Content */}
+        <div className="mb-6">
+          <h3 className="font-semibold mb-2">Reference</h3>
+          <ul className="space-y-1 text-sm">
+            <li>
+              <Link
+                href="#"
+                className="text-muted-foreground hover:text-foreground block py-1 px-2 rounded-md hover:bg-muted/50 transition-colors"
+              >
+                API Docs
+              </Link>
+            </li>
+            {/* ...other reference links... */}
+          </ul>
+        </div>
+      </div>
+    );
+  }
+  return null;
 }
