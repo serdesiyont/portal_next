@@ -1,11 +1,11 @@
 "use client";
-import Hero from "@/components/Hero";
-import Bento from "@/components/Bento";
-import Feature from "@/components/Feature";
-import FAQ from "@/components/FAQ";
-import Stats from "@/components/Stats";
-import Footer from "@/components/Footer";
-import Navbar from "@/components/Navbar";
+import Hero from "@/components/home/Hero";
+import Bento from "@/components/home/Bento";
+import Feature from "@/components/home/Feature";
+import FAQ from "@/components/home/FAQ";
+import Stats from "@/components/home/Stats";
+import Footer from "@/components/home/Footer";
+import Navbar from "@/components/home/Navbar";
 
 function Home() {
   return (

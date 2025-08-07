@@ -1,7 +1,5 @@
 # Getting Started
 
-In this guide we used Chroma's [ephemeral client](../run-chroma/ephemeral-client) for simplicity. It starts a Chroma server in-memory, so any data you ingest will be lost when your program terminates. You can use the [persistent client](../run-chroma/persistent-client) or run Chroma in [client-server mode](../run-chroma/client-server) if you need data persistence.
-
 
 
 {% Video link="https://www.youtube.com/embed/yvsmkx-Jaj0" title="Getting Started Video" / %}
@@ -68,11 +66,6 @@ docker pull chromadb/chroma
 docker run -p 8000:8000 chromadb/chroma
 ```
 
-{% Video link="https://www.youtube.com/embed/yvsmkx-Jaj0" title="Getting Started Video" / %}
-{% Video link="https://www.youtube.com/embed/yvsmkx-Jaj0" title="Getting Started Video" / %}
-{% Video link="https://www.youtube.com/embed/yvsmkx-Jaj0" title="Getting Started Video" / %}
-
-## 1. Install
 
 Then create a client which connects to it:
 
@@ -145,26 +138,6 @@ results = collection.query(
 print(results)
 ```
 
-{% Video link="https://www.youtube.com/embed/yvsmkx-Jaj0" title="Getting Started Video" / %}
-
-## 1. Install
-
-```typescript
-const results = await collection.query({
-    queryTexts: "This is a query document about hawaii", // Chroma will embed this for you
-    nResults: 2, // how many results to return
-});
-
-console.log(results);
-```
-
-
-If `n_results` is not provided, Chroma will return 10 results by default. Here we only added 2 documents, so we set `n_results=2`.
-
-## 6. Inspect Results
-
-From the above - you can see that our query about `hawaii` is semantically most similar to the document about `pineapple`.
-## 1. Install
 
 ```typescript
 const results = await collection.query({

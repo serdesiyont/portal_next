@@ -11,11 +11,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChatWidget, ChatContent } from "@/components/chat-widget";
+import { ChatWidget, ChatContent } from "@/components/class-room/chat-widget";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ClassRoomSidebar } from "@/components/class-room-sidebar";
-import { ClassRoomMainContent } from "@/components/class-room-main-content";
+import { ClassRoomSidebar } from "@/components/class-room/class-room-sidebar";
+import { ClassRoomMainContent } from "@/components/class-room/class-room-main-content";
+import Exercise from "@/components/class-room/class-room-exercise";
+import Reference from "@/components/class-room/class-room-refernce";
 
 export default function ChromaDocsClone() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -154,11 +156,13 @@ export default function ChromaDocsClone() {
 
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto">
-          <ClassRoomMainContent />
+          {sidebarSection === "lesson" && <ClassRoomMainContent />}
+          {sidebarSection === "exercise" && <Exercise />}
+          {sidebarSection === "reference" && <Reference />}
         </div>
 
         {/* Chat Panel */}
-        {isChatOpen && (
+        {isChatOpen && sidebarSection !== "exercise" && (
           <aside className="w-[500px] flex-shrink-0 overflow-hidden border-l">
             <ChatContent
               onClose={() => handleChatToggle(false)}
@@ -170,7 +174,9 @@ export default function ChromaDocsClone() {
       </div>
 
       {/* Chat Widget - Only show floating button when chat is closed */}
-      {!isChatOpen && <ChatWidget onChatToggle={handleChatToggle} />}
+      {sidebarSection !== "exercise" && !isChatOpen && (
+        <ChatWidget onChatToggle={handleChatToggle} />
+      )}
     </div>
   );
 }
