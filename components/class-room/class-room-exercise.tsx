@@ -1,15 +1,16 @@
-import EditorPanel from "./editor/_components/EditorPanel";
-import OutputPanel from "./editor/_components/OutputPanel";
-import Header from "./editor/_components/Header";
-export default function EmptyExercise() {
+import ExerciseSidebar from "./exercise/exercise-sidebar";
+import ExerciseMainContent from "./exercise/exercise-main-content";
+
+export default function ClassRoomExercise() {
   return (
-    <div className="p-8 w-full max-w-6xl mx-auto">
-      <div className="prose prose-gray dark:prose-invert max-w-none">
-          <Header />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <EditorPanel />
-          <OutputPanel />
-        </div>
+    <div className="flex flex-1 overflow-hidden">
+      {/* Sidebar for exercises */}
+      <aside className="w-64 border-r bg-muted/30 flex-shrink-0 overflow-y-auto">
+        <ExerciseSidebar />
+      </aside>
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto">
+        <ExerciseMainContent />
       </div>
     </div>
   );

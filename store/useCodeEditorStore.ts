@@ -1,5 +1,5 @@
 import { CodeEditorState } from "./../types/index";
-import { LANGUAGE_CONFIG } from "@/components/class-room/editor/_constants";
+import { LANGUAGE_CONFIG } from "@/components/class-room/exercise/_constants";
 import { create } from "zustand";
 import { Monaco } from "@monaco-editor/react";
 
@@ -102,7 +102,10 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
 
         // handle API-level erros
         if (data.message) {
-          set({ error: data.message, executionResult: { code, output: "", error: data.message } });
+          set({
+            error: data.message,
+            executionResult: { code, output: "", error: data.message },
+          });
           return;
         }
 
@@ -158,4 +161,5 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
   };
 });
 
-export const getExecutionResult = () => useCodeEditorStore.getState().executionResult;
+export const getExecutionResult = () =>
+  useCodeEditorStore.getState().executionResult;

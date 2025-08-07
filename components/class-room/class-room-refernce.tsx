@@ -1,9 +1,16 @@
+import ReferenceSidebar from "./reference/reference-sidebar";
+import ReferenceMainContent from "./reference/refence-main-content";
+
 export default function Reference() {
   return (
-    <div className="p-8 w-full max-w-6xl mx-auto">
-      <div className="prose prose-gray dark:prose-invert max-w-none">
-        <h1>Reference</h1>
-        <p>No reference material available yet.</p>
+    <div className="flex flex-1 overflow-hidden">
+      {/* Sidebar for reference */}
+      <aside className="w-64 border-r bg-muted/30 flex-shrink-0 overflow-y-auto">
+        <ReferenceSidebar />
+      </aside>
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto">
+        <ReferenceMainContent />
       </div>
     </div>
   );
