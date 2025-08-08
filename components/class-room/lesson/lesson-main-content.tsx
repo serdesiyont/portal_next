@@ -173,46 +173,39 @@ const LessonBlock = ({ lesson }: { lesson: LessonContent }) => {
 
 export function ClassRoomMainContent() {
   const [lessonFiles, setLessonFiles] = useState<string[]>([]);
-  const [loadedLessons, setLoadedLessons] = useState<LessonContent[]>([]);
-  const [nextLessonIndex, setNextLessonIndex] = useState(0);
+  const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
+  const [currentLesson, setCurrentLesson] = useState<LessonContent | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // Listen for sidebar requests to load specific lessons
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<number[]>).detail;
       if (Array.isArray(detail)) {
-        // Load all lessons up to the highest requested index
+        // Load the requested lesson index
         const maxIdx = Math.max(...detail);
-        loadLessonsUpTo(maxIdx);
+        if (lessonFiles.length > 0 && maxIdx < lessonFiles.length) {
+          setCurrentLessonIndex(maxIdx);
+        }
       }
     };
     window.addEventListener("sidebar-load-lessons", handler);
     return () => window.removeEventListener("sidebar-load-lessons", handler);
-  }, [lessonFiles, loadedLessons]);
+  }, [lessonFiles]);
 
-  // Helper to load lessons up to a given index
-  const loadLessonsUpTo = useCallback(
+  // Load lesson by index
+  const loadLessonByIndex = useCallback(
     async (idx: number) => {
-      if (lessonFiles.length === 0) return;
-      let toLoad = idx + 1 - loadedLessons.length;
-      if (toLoad <= 0) return;
+      if (lessonFiles.length === 0 || idx < 0 || idx >= lessonFiles.length)
+        return;
       setIsLoading(true);
-      const newLessons: LessonContent[] = [];
-      for (
-        let i = loadedLessons.length;
-        i <= idx && i < lessonFiles.length;
-        i++
-      ) {
-        const lesson = await fetchLesson(lessonFiles[i]);
-        newLessons.push(lesson);
-      }
-      setLoadedLessons((prev) => [...prev, ...newLessons]);
-      setNextLessonIndex(idx + 1);
+      const lesson = await fetchLesson(lessonFiles[idx]);
+      setCurrentLesson(lesson);
       setIsLoading(false);
     },
-    [lessonFiles, loadedLessons]
+    [lessonFiles]
   );
 
   // Fetch initial lesson list
@@ -224,52 +217,81 @@ export function ClassRoomMainContent() {
     loadInitialData();
   }, []);
 
-  // Load the first lesson once files are listed
+  // Load the current lesson when lessonFiles or currentLessonIndex changes
   useEffect(() => {
-    if (lessonFiles.length > 0 && loadedLessons.length === 0) {
-      loadNextLesson();
+    if (lessonFiles.length > 0) {
+      loadLessonByIndex(currentLessonIndex);
     }
-  }, [lessonFiles]);
+  }, [lessonFiles, currentLessonIndex, loadLessonByIndex]);
 
-  const loadNextLesson = useCallback(async () => {
-    if (isLoading || nextLessonIndex >= lessonFiles.length) {
-      return;
-    }
-    setIsLoading(true);
-    const filename = lessonFiles[nextLessonIndex];
-    const lesson = await fetchLesson(filename);
-    setLoadedLessons((prev) => [...prev, lesson]);
-    setNextLessonIndex((prev) => prev + 1);
-    setIsLoading(false);
-  }, [isLoading, nextLessonIndex, lessonFiles]);
+  // Remove infinite scroll logic
 
-  const handleScroll = useCallback(() => {
-    const container = containerRef.current;
-    if (container) {
-      const { scrollHeight, scrollTop, clientHeight } = container;
-      if (scrollHeight - scrollTop - clientHeight < 500) {
-        loadNextLesson();
+  // Helper to get main heading from lesson content
+  const getMainHeading = (lesson: LessonContent | null) => {
+    if (!lesson || !lesson.raw) return "";
+    const match = lesson.raw.match(/^#\s+(.+)/m);
+    return match ? match[1].trim() : "";
+  };
+
+  const [prevLesson, setPrevLesson] = useState<LessonContent | null>(null);
+  const [nextLesson, setNextLesson] = useState<LessonContent | null>(null);
+
+  useEffect(() => {
+    const fetchAdjacentLessons = async () => {
+      if (lessonFiles.length > 0) {
+        if (currentLessonIndex > 0) {
+          setPrevLesson(await fetchLesson(lessonFiles[currentLessonIndex - 1]));
+        } else {
+          setPrevLesson(null);
+        }
+        if (currentLessonIndex < lessonFiles.length - 1) {
+          setNextLesson(await fetchLesson(lessonFiles[currentLessonIndex + 1]));
+        } else {
+          setNextLesson(null);
+        }
       }
-    }
-  }, [loadNextLesson]);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (container) {
-      container.addEventListener("scroll", handleScroll);
-      return () => container.removeEventListener("scroll", handleScroll);
-    }
-  }, [handleScroll]);
-
+    };
+    fetchAdjacentLessons();
+  }, [lessonFiles, currentLessonIndex]);
   return (
-    <div
-      ref={containerRef}
-      className="p-8 w-full max-w-6xl mx-auto overflow-y-auto h-full"
-    >
-      {loadedLessons.map((lesson, index) => (
-        <LessonBlock key={index} lesson={lesson} />
-      ))}
-      {isLoading && <p>Loading next lesson...</p>}
+    <div className="p-8 w-full max-w-4xl mx-auto h-full flex flex-col items-center">
+      {isLoading || !currentLesson ? (
+        <p>Loading lesson...</p>
+      ) : (
+        <>
+          <LessonBlock lesson={currentLesson} />
+          <div className="flex justify-between w-full mt-8 ">
+            <Button
+              variant="outline"
+              disabled={currentLessonIndex === 0}
+              onClick={() =>
+                setCurrentLessonIndex((idx) => Math.max(0, idx - 1))
+              }
+            >
+              {`Previous${
+                getMainHeading(prevLesson)
+                  ? ": " + getMainHeading(prevLesson)
+                  : ""
+              }`}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={currentLessonIndex === lessonFiles.length - 1}
+              onClick={() =>
+                setCurrentLessonIndex((idx) =>
+                  Math.min(lessonFiles.length - 1, idx + 1)
+                )
+              }
+            >
+              {`Next${
+                getMainHeading(nextLesson)
+                  ? ": " + getMainHeading(nextLesson)
+                  : ""
+              }`}
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

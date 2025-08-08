@@ -57,12 +57,11 @@ export default function LessonSidebar() {
   }, [loadedLessonIndexes]);
 
   const loadLessonByIndex = (idx: number) => {
-    setLoadedLessonIndexes((prev) => {
-      if (prev.has(idx)) return prev;
-      const next = new Set(prev);
-      next.add(idx);
-      return next;
-    });
+    window.dispatchEvent(
+      new CustomEvent("sidebar-load-lessons", {
+        detail: [idx],
+      })
+    );
   };
 
   const handleLinkClick = (
@@ -80,69 +79,79 @@ export default function LessonSidebar() {
         element.scrollIntoView({ behavior: "smooth", block: "start" });
         window.history.pushState(null, "", link);
       }
-    }, 0);
+    }, 100);
   };
 
   return (
-    <div className="p-6">
+    <div className="p-1">
       {lessonSidebars.map((lessonSidebar, lessonIdx) => (
         <div key={lessonSidebar.filename} className="mb-6">
-          {lessonSidebar.items.map((item) => (
-            <div key={item.id} className="mb-4">
-              <button
-                type="button"
-                onClick={() =>
-                  setOpenItems((prev) => ({
-                    ...prev,
-                    [item.id]: !prev[item.id],
-                  }))
-                }
-                className="font-semibold mb-2 w-full text-left hover:text-primary transition-colors flex items-center gap-2"
-                aria-expanded={!!openItems[item.id]}
-              >
-                <span>{item.title}</span>
-                {item.children && (
-                  <span className="ml-1 text-xs">
-                    {openItems[item.id] ? "▼" : "▶"}
-                  </span>
+          <h3 className="font-semibold mb-2 text-lg text-primary">
+            {/* {lessonSidebar.title} */}
+          </h3>
+          <ul className="space-y-1 text-sm">
+            {lessonSidebar.items.map((item) => (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setOpenItems((prev) => ({
+                      ...prev,
+                      [item.id]: !prev[item.id],
+                    }))
+                  }
+                  className={
+                    "w-full text-left py-1 px-2 rounded-md font-medium transition-colors mb-1.5" +
+                    (item.children && openItems[item.id]
+                      ? " bg-muted/50 text-primary shadow-lg"
+                      : " text-muted-foreground")
+                  }
+                  aria-expanded={!!openItems[item.id]}
+                >
+                  <span>{item.title}</span>
+                  {item.children && (
+                    <span className="ml-1 text-xs">
+                      {openItems[item.id] ? "▼" : "▶"}
+                    </span>
+                  )}
+                </button>
+                {item.children && openItems[item.id] && (
+                  <ul className="ml-2 space-y-1 text-sm">
+                    {item.children.map((child) => (
+                      <li key={child.id}>
+                        <a
+                          href={child.link}
+                          onClick={(e) =>
+                            handleLinkClick(e, child.link, lessonIdx)
+                          }
+                          className="text-muted-foreground block py-1 px-2 rounded-md hover:text-foreground hover:bg-muted/50 transition-colors"
+                        >
+                          {child.title}
+                        </a>
+                        {child.children && (
+                          <ul className="ml-4">
+                            {child.children.map((sub) => (
+                              <li key={sub.id}>
+                                <a
+                                  href={sub.link}
+                                  onClick={(e) =>
+                                    handleLinkClick(e, sub.link, lessonIdx)
+                                  }
+                                  className="text-xs text-muted-foreground block py-1 px-2 rounded-md hover:text-foreground hover:bg-muted/50 transition-colors"
+                                >
+                                  {sub.title}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 )}
-              </button>
-              {item.children && openItems[item.id] && (
-                <ul className="space-y-1 text-sm">
-                  {item.children.map((child) => (
-                    <li key={child.id}>
-                      <a
-                        href={child.link}
-                        onClick={(e) =>
-                          handleLinkClick(e, child.link, lessonIdx)
-                        }
-                        className="text-muted-foreground block py-1 px-2 rounded-md hover:text-foreground hover:bg-muted/50 transition-colors"
-                      >
-                        {child.title}
-                      </a>
-                      {child.children && (
-                        <ul className="ml-4">
-                          {child.children.map((sub) => (
-                            <li key={sub.id}>
-                              <a
-                                href={sub.link}
-                                onClick={(e) =>
-                                  handleLinkClick(e, sub.link, lessonIdx)
-                                }
-                                className="text-xs text-muted-foreground block py-1 px-2 rounded-md hover:text-foreground hover:bg-muted/50 transition-colors"
-                              >
-                                {sub.title}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))}
+              </li>
+            ))}
+          </ul>
         </div>
       ))}
     </div>

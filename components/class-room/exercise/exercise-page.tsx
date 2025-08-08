@@ -5,6 +5,7 @@ import {
 } from "../../../lib/exercise-loader";
 import EditorPanel from "./_components/EditorPanel";
 import OutputPanel from "./_components/OutputPanel";
+import { cn } from "@/lib/utils";
 
 function ExerciseSidebar({
   sidebarSections,
@@ -27,11 +28,12 @@ function ExerciseSidebar({
               <li key={exercise.id}>
                 <button
                   type="button"
-                  className={`w-full text-left py-1 px-2 rounded-md font-medium transition-colors  ${
+                  className={cn(
+                    "w-full text-left py-1 px-2 rounded-md font-medium transition-colors",
                     activeId === exercise.id
                       ? "bg-muted/50 text-primary shadow-lg"
                       : "text-muted-foreground"
-                  }`}
+                  )}
                   onClick={() => setActiveId(exercise.id)}
                   aria-current={activeId === exercise.id ? "page" : undefined}
                 >
@@ -86,9 +88,11 @@ export default function ExercisePage() {
             {exercise ? (
               <div>
                 <h2 className="text-2xl font-bold mb-2">{exercise.title}</h2>
-                <p className="mb-4 text-muted-foreground whitespace-pre-line">
-                  {exercise.description}
-                </p>
+                <div className="mb-4 rounded-xl bg-muted/40 shadow-lg border border-muted p-4">
+                  <p className="text-muted-foreground whitespace-pre-line">
+                    {exercise.description}
+                  </p>
+                </div>
                 <div className="mb-6">
                   <EditorPanel
                     code={exercise.code}

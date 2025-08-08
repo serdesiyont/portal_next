@@ -107,7 +107,7 @@ function EditorPanel({ code, language, exerciseId }: EditorPanelProps) {
         {/* Editor  */}
         <div className="relative group rounded-xl overflow-hidden ring-1 ring-white/[0.05]">
           <Editor
-            height="700px"
+            height="600px"
             language={language}
             value={code}
             onChange={handleEditorChange}

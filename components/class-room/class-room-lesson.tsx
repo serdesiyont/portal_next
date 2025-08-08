@@ -14,7 +14,7 @@ export default function ClassRoomLesson() {
         <LessonSidebar />
       </aside>
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto mb-6">
         <ClassRoomMainContent />
       </div>
       {/* Chat Widget/Panel */}
