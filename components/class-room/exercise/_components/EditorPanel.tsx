@@ -1,26 +1,35 @@
 "use client";
-import { useCodeEditorStore } from "@/store/useCodeEditorStore";
+import { useCodeEditorStore } from "@/lib/useCodeEditorStore";
 import { useEffect } from "react";
-import { defineMonacoThemes, LANGUAGE_CONFIG } from "../_constants";
+import { defineMonacoThemes } from "../_constants";
 import { Editor } from "@monaco-editor/react";
 import { motion } from "framer-motion";
-import Image from "next/image";
-import { RotateCcwIcon, ShareIcon, TypeIcon } from "lucide-react";
+import { RotateCcwIcon, TypeIcon } from "lucide-react";
 import useMounted from "@/hooks/useMounted";
 import RunButton from "./RunButton";
 import ThemeSelector from "./ThemeSelector";
 
-function EditorPanel() {
-  const { language, theme, fontSize, editor, setFontSize, setEditor } =
-    useCodeEditorStore();
+interface EditorPanelProps {
+  code: string;
+  language: string;
+  exerciseId: string;
+}
 
+function EditorPanel({ code, language, exerciseId }: EditorPanelProps) {
+  const { theme, fontSize, editor, setFontSize, setEditor } =
+    useCodeEditorStore();
   const mounted = useMounted();
 
+  // Use a unique key for each exercise to keep state per exercise
+  const codeKey = `editor-code-${exerciseId}`;
+
   useEffect(() => {
-    const savedCode = localStorage.getItem(`editor-code-${language}`);
-    const newCode = savedCode || LANGUAGE_CONFIG[language].defaultCode;
-    if (editor) editor.setValue(newCode);
-  }, [language, editor]);
+    if (!editor) return;
+    let newCode = code;
+    const savedCode = localStorage.getItem(codeKey);
+    if (typeof savedCode === "string") newCode = savedCode;
+    if (typeof newCode === "string") editor.setValue(newCode);
+  }, [exerciseId, code, editor]);
 
   useEffect(() => {
     const savedFontSize = localStorage.getItem("editor-font-size");
@@ -28,13 +37,12 @@ function EditorPanel() {
   }, [setFontSize]);
 
   const handleRefresh = () => {
-    const defaultCode = LANGUAGE_CONFIG[language].defaultCode;
-    if (editor) editor.setValue(defaultCode);
-    localStorage.removeItem(`editor-code-${language}`);
+    if (editor && typeof code === "string") editor.setValue(code);
+    localStorage.removeItem(codeKey);
   };
 
   const handleEditorChange = (value: string | undefined) => {
-    if (value) localStorage.setItem(`editor-code-${language}`, value);
+    if (value) localStorage.setItem(codeKey, value);
   };
 
   const handleFontSizeChange = (newSize: number) => {
@@ -64,7 +72,7 @@ function EditorPanel() {
           <div className="flex  items-center gap-3">
             {/* Run Button and Theme Selector to the left of Font Size Slider */}
             {/* Font Size Slider */}
-            <RunButton />
+            <RunButton language={language} />
             <ThemeSelector />
             <div className="flex items-center gap-3 px-3 py-2 bg-[#1e1e2e] rounded-lg ring-1 ring-white/5">
               <TypeIcon className="size-4 text-gray-400" />
@@ -100,7 +108,8 @@ function EditorPanel() {
         <div className="relative group rounded-xl overflow-hidden ring-1 ring-white/[0.05]">
           <Editor
             height="700px"
-            language={LANGUAGE_CONFIG[language].monacoLanguage}
+            language={language}
+            value={code}
             onChange={handleEditorChange}
             theme={theme}
             beforeMount={defineMonacoThemes}

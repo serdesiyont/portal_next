@@ -1,7 +1,7 @@
-import { CodeEditorState } from "./../types/index";
-import { LANGUAGE_CONFIG } from "@/components/class-room/exercise/_constants";
+import { CodeEditorState } from "../types/index";
+import { LANGUAGE_RUNTIMES } from "@/components/class-room/exercise/_constants";
 import { create } from "zustand";
-import { Monaco } from "@monaco-editor/react";
+import type * as monaco from "monaco-editor";
 
 const getInitialState = () => {
   // if we're on the server, return default values
@@ -38,7 +38,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
 
     getCode: () => get().editor?.getValue() || "",
 
-    setEditor: (editor: Monaco) => {
+    setEditor: (editor: monaco.editor.IStandaloneCodeEditor) => {
       const savedCode = localStorage.getItem(`editor-code-${get().language}`);
       if (savedCode) editor.setValue(savedCode);
 
@@ -71,8 +71,8 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
       });
     },
 
-    runCode: async () => {
-      const { language, getCode } = get();
+    runCode: async (language: string) => {
+      const { getCode } = get();
       const code = getCode();
 
       if (!code) {
@@ -80,10 +80,14 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
         return;
       }
 
-      set({ isRunning: true, error: null, output: "" });
+      set({ isRunning: true, output: "", error: null });
 
       try {
-        const runtime = LANGUAGE_CONFIG[language].pistonRuntime;
+        const runtime = LANGUAGE_RUNTIMES[language];
+        if (!runtime) {
+          throw new Error(`Unsupported language: ${language}`);
+        }
+
         const response = await fetch("https://emkc.org/api/v2/piston/execute", {
           method: "POST",
           headers: {

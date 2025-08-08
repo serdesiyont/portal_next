@@ -1,14 +1,14 @@
 "use client";
 
-import { useCodeEditorStore } from "@/store/useCodeEditorStore";
+import { useCodeEditorStore } from "@/lib/useCodeEditorStore";
 import { motion } from "framer-motion";
 import { Loader2, Play } from "lucide-react";
 
-function RunButton() {
+function RunButton({ language }: { language: string }) {
   const { runCode, isRunning } = useCodeEditorStore();
 
   const handleRun = async () => {
-    await runCode();
+    await runCode(language);
   };
 
   return (

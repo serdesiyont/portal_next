@@ -1,4 +1,5 @@
 import { Monaco } from "@monaco-editor/react";
+import { darkPlus, lightPlus, replitDark } from "./themes";
 import { Theme } from "@/types";
 
 type LanguageConfig = Record<
@@ -421,15 +422,21 @@ export const THEME_DEFINITONS = {
 
 // Helper function to define themes in Monaco
 export const defineMonacoThemes = (monaco: Monaco) => {
-  Object.entries(THEME_DEFINITONS).forEach(([themeName, themeData]) => {
-    monaco.editor.defineTheme(themeName, {
-      base: themeData.base,
-      inherit: themeData.inherit,
-      rules: themeData.rules.map((rule) => ({
-        ...rule,
-        foreground: rule.foreground,
-      })),
-      colors: themeData.colors,
-    });
-  });
+  monaco.editor.defineTheme("dark-plus", darkPlus);
+  monaco.editor.defineTheme("light-plus", lightPlus);
+  monaco.editor.defineTheme("replit-dark", replitDark);
+  for (const [themeName, themeData] of Object.entries(THEME_DEFINITONS)) {
+    monaco.editor.defineTheme(themeName, themeData as any);
+  }
+};
+
+export const LANGUAGE_RUNTIMES: {
+  [key: string]: { language: string; version: string };
+} = {
+  javascript: { language: "javascript", version: "18.15.0" },
+  python: { language: "python", version: "3.10.0" },
+  typescript: { language: "typescript", version: "5.0.3" },
+  java: { language: "java", version: "15.0.2" },
+  csharp: { language: "csharp", version: "6.12.0" },
+  php: { language: "php", version: "8.2.3" },
 };

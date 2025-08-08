@@ -1,12 +1,55 @@
 import React, { useEffect, useState } from "react";
-import { parseExercisesMarkdown } from "../../../lib/exercise-loader";
+import {
+  parseExercisesMarkdown,
+  ExerciseSidebarSection,
+} from "../../../lib/exercise-loader";
 import EditorPanel from "./_components/EditorPanel";
 import OutputPanel from "./_components/OutputPanel";
 
+function ExerciseSidebar({
+  sidebarSections,
+  activeId,
+  setActiveId,
+}: {
+  sidebarSections: ExerciseSidebarSection[];
+  activeId: string | null;
+  setActiveId: (id: string) => void;
+}) {
+  return (
+    <div className="p-1">
+      {sidebarSections.map((section) => (
+        <div key={section.heading} className="mb-6">
+          <h3 className="font-semibold mb-2  text-lg text-primary">
+            {section.heading}
+          </h3>
+          <ul className="space-y-1 text-sm">
+            {section.exercises.map((exercise) => (
+              <li key={exercise.id}>
+                <button
+                  type="button"
+                  className={`w-full text-left py-1 px-2 rounded-md font-medium transition-colors  ${
+                    activeId === exercise.id
+                      ? "bg-muted/50 text-primary shadow-lg"
+                      : "text-muted-foreground"
+                  }`}
+                  onClick={() => setActiveId(exercise.id)}
+                  aria-current={activeId === exercise.id ? "page" : undefined}
+                >
+                  <span>{exercise.title}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const MARKDOWN_PATH = "/resources/questions.md";
 
-export default function ExerciseMainContent() {
-  const [sidebar, setSidebar] = useState<any[]>([]);
+export default function ExercisePage() {
+  const [sidebar, setSidebar] = useState<ExerciseSidebarSection[]>([]);
   const [exerciseContents, setExerciseContents] = useState<any[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -23,12 +66,20 @@ export default function ExerciseMainContent() {
     load();
   }, []);
 
-  if (!exerciseContents.length || !activeId) return <div>Loading...</div>;
+  if (!sidebar.length || !exerciseContents.length || !activeId)
+    return <div>Loading...</div>;
 
   const exercise = exerciseContents.find((e) => e.id === activeId);
 
   return (
     <div className="flex flex-1 overflow-hidden">
+      <aside className="w-[300px] h-full flex-shrink-0 overflow-hidden border-r bg-background rounded-xl shadow-lg p-6 flex flex-col">
+        <ExerciseSidebar
+          sidebarSections={sidebar}
+          activeId={activeId}
+          setActiveId={setActiveId}
+        />
+      </aside>
       <div className="flex-1 overflow-y-auto relative">
         <div className="h-full w-full flex flex-col relative">
           <div className="pt-2 px-6 pb-6 flex-1 flex flex-col">

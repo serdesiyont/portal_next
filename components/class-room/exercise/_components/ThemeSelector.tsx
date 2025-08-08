@@ -1,10 +1,18 @@
 "use client";
 
-import { useCodeEditorStore } from "@/store/useCodeEditorStore";
+import { useCodeEditorStore } from "@/lib/useCodeEditorStore";
 import React, { useEffect, useRef, useState } from "react";
 import { THEMES } from "../_constants";
 import { AnimatePresence, motion } from "framer-motion";
-import { CircleOff, Cloud, Github, Laptop, Moon, Palette, Sun } from "lucide-react";
+import {
+  CircleOff,
+  Cloud,
+  Github,
+  Laptop,
+  Moon,
+  Palette,
+  Sun,
+} from "lucide-react";
 import useMounted from "@/hooks/useMounted";
 
 const THEME_ICONS: Record<string, React.ReactNode> = {
@@ -24,7 +32,10 @@ function ThemeSelector() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -72,7 +83,9 @@ function ThemeSelector() {
             backdrop-blur-xl rounded-xl border border-[#313244] shadow-2xl py-2 z-50"
           >
             <div className="px-2 pb-2 mb-2 border-b border-gray-800/50">
-              <p className="text-xs font-medium text-gray-400 px-2">Select Theme</p>
+              <p className="text-xs font-medium text-gray-400 px-2">
+                Select Theme
+              </p>
             </div>
 
             {THEMES.map((t, index) => (
@@ -83,7 +96,11 @@ function ThemeSelector() {
                 transition={{ delay: index * 0.1 }}
                 className={`
                 relative group w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#262637] transition-all duration-200
-                ${theme === t.id ? "bg-blue-500/10 text-blue-400" : "text-gray-300"}
+                ${
+                  theme === t.id
+                    ? "bg-blue-500/10 text-blue-400"
+                    : "text-gray-300"
+                }
               `}
                 onClick={() => setTheme(t.id)}
               >
@@ -97,7 +114,11 @@ function ThemeSelector() {
                 <div
                   className={`
                 flex items-center justify-center size-8 rounded-lg
-                ${theme === t.id ? "bg-blue-500/10 text-blue-400" : "bg-gray-800/50 text-gray-400"}
+                ${
+                  theme === t.id
+                    ? "bg-blue-500/10 text-blue-400"
+                    : "bg-gray-800/50 text-gray-400"
+                }
                 group-hover:scale-110 transition-all duration-200
               `}
                 >

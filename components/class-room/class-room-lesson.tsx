@@ -3,7 +3,7 @@ import { ClassRoomMainContent } from "./lesson/lesson-main-content";
 import { ChatWidget, ChatContent } from "./chat-widget";
 import { useState } from "react";
 
-export default function ChatRoomLesson() {
+export default function ClassRoomLesson() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const handleChatToggle = (isOpen: boolean) => setIsChatOpen(isOpen);
 
