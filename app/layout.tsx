@@ -7,9 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Chroma Documentation",
-  description: "AI-native open-source vector database",
-    generator: 'v0.dev'
+  title: "Portal",
 }
 
 export default function RootLayout({
