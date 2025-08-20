@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import React, { useState } from "react";
 import { Home } from "lucide-react";
+import { login } from "@/app/api/users/login";
 export function LoginForm({
   className,
   ...props
@@ -36,6 +37,30 @@ export function LoginForm({
     setIsValidPassword(passwordCriteria);
   };
 
+  const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setLoading(true);
+    const formData = { email, password };
+    try {
+      const res = await login(formData);
+      if (res.ok) {
+        window.location.href = "/class-room";
+      } else if (res.status === 401) {
+        setErrorMsg("Credentials are incorrect");
+      } else {
+        setErrorMsg("Login failed");
+      }
+    } catch (err) {
+      setErrorMsg("Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <div className="absolute top-4 left-4">
@@ -55,7 +80,7 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-3">
                 <Label htmlFor="email">Email</Label>
@@ -95,17 +120,22 @@ export function LoginForm({
                 />
               </div>
               <div className="flex flex-col gap-3">
-                <Button type="submit" className="w-full">
-                  Login
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Logging in..." : "Login"}
                 </Button>
+                {errorMsg && (
+                  <div className="text-red-500 text-sm text-center">
+                    {errorMsg}
+                  </div>
+                )}
               </div>
             </div>
-            <div className="mt-4 text-center text-sm">
+            {/* <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}
               <a href="#" className="underline underline-offset-4">
                 Sign up
               </a>
-            </div>
+            </div> */}
           </form>
         </CardContent>
       </Card>

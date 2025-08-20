@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+// import { registerUser } from "@/app/api/users/register";
 import {
   CheckCircle,
   Loader2,
@@ -24,10 +25,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import ProgressBar from "@/components/ui/progress-bar";
 import Link from "next/link";
-
+import { register } from "@/app/api/users/register";
 
 const PRIMARY_COLOR = "var(--primary)"; // Linked to index.css
-const SECONDARY_COLOR = "var(--secondary)"; // Linked to index.css
+const SECONDARY_COLOR = "var(--chart-2)"; // Linked to index.css
 const DISABLED_COLOR = "var(--muted)"; // Linked to index.css
 
 // Refactor VerifyEmailText to simulate OTP sending and verification
@@ -177,43 +178,40 @@ const VerifyEmailText = ({
 
 export function RegisterForm() {
   const [formData, setFormData] = useState({
-    full_name: "",
+    name: "",
     email: "",
-    phone_number: "",
+    phone_num: "",
     gender: "",
-    disability: "Not Provided",
-    experience_years: "",
-    resume: null,
-    additionalInfo: "",
+    division: "",
+    additional: "",
   });
 
-  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [touchedFields, setTouchedFields] = useState({
     email: false,
-    phone_number: false,
+    phone_num: false,
   });
 
   const isValidEmail = (email: string) => /^\S+@\S+\.\S+$/.test(email);
 
   const isFormValid = () => {
     return (
-      isEmailVerified &&
-      formData.full_name &&
+      formData.name &&
       isValidEmail(formData.email) &&
-      formData.phone_number &&
+      formData.phone_num &&
       formData.gender &&
-      formData.experience_years &&
-      formData.resume
+      formData.division &&
+      formData.additional
     );
   };
 
   const handlePhoneChange = (value: string) => {
-    setFormData({ ...formData, phone_number: value });
-    setTouchedFields({ ...touchedFields, phone_number: true });
+    setFormData({ ...formData, phone_num: value });
+    setTouchedFields({ ...touchedFields, phone_num: true });
   };
 
   useEffect(() => {
@@ -229,6 +227,38 @@ export function RegisterForm() {
     setIsEmailVerified(false);
   }, [formData.email]);
 
+  async function registerAction(formData: {
+    name: string;
+    email: string;
+    phone_num: string;
+    gender: string;
+    division: string;
+    additional: string;
+  }) {
+    const res = await register(formData);
+    let data;
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      data = await res.json();
+    } else {
+      data = await res.text();
+    }
+    if (!res.ok) {
+      if (res.status === 409) {
+        throw new Error("Email already used");
+      }
+      if (typeof data === "object" && data.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error(
+          typeof data === "string" ? data : "Registration failed"
+        );
+      }
+    }
+    console.log(data)
+    return data;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -236,7 +266,7 @@ export function RegisterForm() {
     setUploadProgress(30);
 
     if (!isFormValid()) {
-      setError("Please fill out all required fields and verify your email.");
+      setError("Please fill out all required fields.");
       setLoading(false);
       return;
     }
@@ -252,8 +282,8 @@ export function RegisterForm() {
         });
       }, 200);
 
-      // Simulate form submission
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Use server action for registration
+      await registerAction(formData);
 
       clearInterval(progressInterval);
       setUploadProgress(100);
@@ -317,11 +347,11 @@ export function RegisterForm() {
                       </Label>
                       <Input
                         required
-                        value={formData.full_name}
+                        value={formData.name}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            full_name: e.target.value,
+                            name: e.target.value,
                           })
                         }
                         className="focus:ring-2 focus:ring-[#10B981]/50 border-[#1E293B]/30"
@@ -372,7 +402,7 @@ export function RegisterForm() {
                       <Input
                         type="tel"
                         required
-                        value={formData.phone_number}
+                        value={formData.phone_num}
                         onChange={(e) => handlePhoneChange(e.target.value)}
                         placeholder="+251XXXXXXXXX"
                         className="focus:ring-2 focus:ring-[#10B981]/50 border-[#1E293B]/30"
@@ -437,24 +467,6 @@ export function RegisterForm() {
                       </div>
                     </div>
 
-                    {/*                     <div>
-                      <Label className="flex items-center gap-2 text-sm font-medium mb-2">
-                        <Accessibility className="w-4 h-4 text-[#1E293B]" />
-                        Disability Status
-                      </Label>
-                      <select
-                        className="w-full border border-[#1E293B]/30 rounded-md px-3 py-2.5 bg-white text-[#1E293B]/90 focus:ring-2 focus:ring-[#10B981]/50"
-                        value={formData.disability}
-                        onChange={(e) => setFormData({ ...formData, disability: e.target.value })}
-                        required
-                      >
-                        <option value="" disabled>Select an option</option>
-                        <option value="Yes">Yes</option>
-                        <option value="No">No</option>
-                        <option value="Prefer not to say">Prefer not to say</option>
-                      </select>
-                    </div> */}
-
                     <div>
                       <Label className="flex items-center gap-2 text-sm font-medium mb-2">
                         <Briefcase className="w-4 h-4 text-[#1E293B]" />
@@ -462,11 +474,11 @@ export function RegisterForm() {
                       </Label>
                       <select
                         className="w-full border border-[#1E293B]/30 rounded-md px-3 py-2.5 bg-white text-[#1E293B]/90 focus:ring-2 focus:ring-[#10B981]/50"
-                        value={formData.experience_years}
+                        value={formData.division}
                         onChange={(e) =>
                           setFormData({
                             ...formData,
-                            experience_years: e.target.value,
+                            division: e.target.value,
                           })
                         }
                         required
@@ -474,12 +486,12 @@ export function RegisterForm() {
                         <option value="" disabled>
                           Select track
                         </option>
-                        <option value="DJANGO">DJANGO</option>
-                        <option value="REACT">REACT</option>
-                        <option value="LARAVEL">LARAVEL</option>
+                        <option value="Django">Django</option>
+                        <option value="React">React</option>
+                        <option value="Laravel">Laravel</option>
                         <option value="DSA">DSA</option>
-                        <option value="BEGINNER">BEGINNER</option>
-                        <option value="FLUTTER">FLUTTER</option>
+                        <option value="Begineer">Begineer</option>
+                        <option value="Flutter">Flutter</option>
                       </select>
                     </div>
                   </div>
@@ -492,11 +504,11 @@ export function RegisterForm() {
                   </Label>
                   <textarea
                     className="border-2 border-dashed rounded-xl p-6 text-left cursor-pointer transition-all w-full h-32 focus:ring-2 focus:ring-[#10B981]/50 border-[#1E293B]/30"
-                    value={formData.additionalInfo}
+                    value={formData.additional}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        additionalInfo: e.target.value,
+                        additional: e.target.value,
                       })
                     }
                     placeholder="Provide any additional information here..."
