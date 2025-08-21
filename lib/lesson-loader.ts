@@ -1,3 +1,13 @@
+import api from "@/lib/axios";
+import axios from "axios";
+
+export interface LessonDto {
+  id: number;
+  title: string;
+  address: string;
+  user?: unknown;
+}
+
 export interface SidebarItem {
   id: string;
   title: string;
@@ -72,20 +82,26 @@ function parseMarkdownHeadings(markdown: string): SidebarItem[] {
   return items;
 }
 
-export async function fetchLesson(filename: string): Promise<LessonContent> {
-  const res = await fetch(`/resources/${filename}`);
-  const raw = await res.text();
+// Load a lesson's markdown using its address (absolute URL or backend-relative path) via axios
+export async function fetchLesson(address: string): Promise<LessonContent> {
+  const client = axios.create()
+
+  const url = address; // if relative, api.get will prefix baseURL
+
+  const res = await client.get<string>(url, {
+    responseType: "text",
+  });
+  const raw = res.data as unknown as string;
   return {
     raw,
     sidebar: parseMarkdownHeadings(raw),
   };
 }
 
-// New function to fetch the list of lesson files
+// Fetch the list of lessons from backend and return their addresses for consumption
 export async function fetchLessonList(): Promise<string[]> {
-  const res = await fetch(`/resources/lessons.json`);
-  const data = await res.json();
-  return data.lessons;
+  const { data } = await api.get<LessonDto[]>("/lessons");
+  return (data || []).map((l) => l.address);
 }
 
 export { slugify };

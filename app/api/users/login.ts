@@ -1,13 +1,5 @@
-import axios from "axios";
-
-const BASE_URL = process.env.BASE_DEV_URL || "http://localhost:8888";
-const api = axios.create({
-  headers: {
-    "Content-Type": "application/json",
-  },
-  baseURL: BASE_URL,
-  withCredentials: true
-});
+import cookies from "js-cookie";
+import api from "@/lib/axios";
 
 export async function login(formData: {
   email: string;
@@ -15,11 +7,12 @@ export async function login(formData: {
 }) {
   try {
     const data = JSON.stringify(formData);
-    console.log(formData)
     const response = await api.post("/auth/login", data);
-    console.log(response.data)
-    localStorage.setItem("ROLE", response.data.ROLE)
+    localStorage.setItem("ROLE", response.data.ROLE);
     localStorage.setItem("DIVISION", response.data.DIVISION);
+    cookies.set("access_token", response.data.ACCESS_TOKEN, { expires: 1 });
+    cookies.set("refresh_token", response.data.REFRESH_TOKEN, { expires: 7 });
+    
     return new Response(JSON.stringify(response.data), {
       status: 200,
       headers: { "Content-Type": "application/json" },

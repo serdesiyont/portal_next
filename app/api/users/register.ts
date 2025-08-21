@@ -1,12 +1,4 @@
-import axios from "axios";
-
-const BASE_URL = process.env.BASE_DEV_URL || "http://localhost:8888";
-const api = axios.create({
-  headers: {
-    "Content-Type": "application/json",
-  },
-  baseURL: BASE_URL
-});
+import api from "@/lib/axios";
 
 export async function register(formData: {
   name: string;
@@ -17,11 +9,10 @@ export async function register(formData: {
   additional: string;
 }) {
   try {
-    
-      console.log(formData);
-      const data = JSON.stringify(formData)
-      console.log(data);
-    const response = await api.post('/users', data);
+    console.log(formData);
+    const data = JSON.stringify(formData);
+    console.log(data);
+    const response = await api.post("/users", data);
     return new Response(JSON.stringify(response.data), {
       status: 200,
       headers: { "Content-Type": "application/json" },
