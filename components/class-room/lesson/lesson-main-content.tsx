@@ -4,12 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import {
-  fetchLesson,
-  fetchLessonList,
-  slugify,
-  LessonContent,
-} from "@/lib/lesson-loader";
+import { slugify, LessonContent } from "@/lib/lesson-loader";
+import { useLessonContext } from "./LessonProvider";
 
 const languageMap: { [key: string]: string | undefined } = {
   terminal: "bash",
@@ -171,88 +167,24 @@ const LessonBlock = ({ lesson }: { lesson: LessonContent }) => {
   );
 };
 
-export function ClassRoomMainContent() {
-  const [lessonFiles, setLessonFiles] = useState<string[]>([]);
-  const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
-  const [currentLesson, setCurrentLesson] = useState<LessonContent | null>(
-    null
-  );
-  const [isLoading, setIsLoading] = useState(false);
+function ClassRoomMainContent() {
+  const { lessons, isLoading, currentLessonIndex, setCurrentLessonIndex } =
+    useLessonContext();
 
-  // Listen for sidebar requests to load specific lessons
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<number[]>).detail;
-      if (Array.isArray(detail)) {
-        // Load the requested lesson index
-        const maxIdx = Math.max(...detail);
-        if (lessonFiles.length > 0 && maxIdx < lessonFiles.length) {
-          setCurrentLessonIndex(maxIdx);
-        }
-      }
-    };
-    window.addEventListener("sidebar-load-lessons", handler);
-    return () => window.removeEventListener("sidebar-load-lessons", handler);
-  }, [lessonFiles]);
+  const currentLesson = lessons[currentLessonIndex] || null;
+  const prevLesson =
+    currentLessonIndex > 0 ? lessons[currentLessonIndex - 1] : null;
+  const nextLesson =
+    currentLessonIndex < lessons.length - 1
+      ? lessons[currentLessonIndex + 1]
+      : null;
 
-  // Load lesson by index
-  const loadLessonByIndex = useCallback(
-    async (idx: number) => {
-      if (lessonFiles.length === 0 || idx < 0 || idx >= lessonFiles.length)
-        return;
-      setIsLoading(true);
-      const lesson = await fetchLesson(lessonFiles[idx]);
-      setCurrentLesson(lesson);
-      setIsLoading(false);
-    },
-    [lessonFiles]
-  );
-
-  // Fetch initial lesson list
-  useEffect(() => {
-    const loadInitialData = async () => {
-      const files = await fetchLessonList();
-      setLessonFiles(files);
-    };
-    loadInitialData();
-  }, []);
-
-  // Load the current lesson when lessonFiles or currentLessonIndex changes
-  useEffect(() => {
-    if (lessonFiles.length > 0) {
-      loadLessonByIndex(currentLessonIndex);
-    }
-  }, [lessonFiles, currentLessonIndex, loadLessonByIndex]);
-
-  // Remove infinite scroll logic
-
-  // Helper to get main heading from lesson content
   const getMainHeading = (lesson: LessonContent | null) => {
     if (!lesson || !lesson.raw) return "";
     const match = lesson.raw.match(/^#\s+(.+)/m);
     return match ? match[1].trim() : "";
   };
 
-  const [prevLesson, setPrevLesson] = useState<LessonContent | null>(null);
-  const [nextLesson, setNextLesson] = useState<LessonContent | null>(null);
-
-  useEffect(() => {
-    const fetchAdjacentLessons = async () => {
-      if (lessonFiles.length > 0) {
-        if (currentLessonIndex > 0) {
-          setPrevLesson(await fetchLesson(lessonFiles[currentLessonIndex - 1]));
-        } else {
-          setPrevLesson(null);
-        }
-        if (currentLessonIndex < lessonFiles.length - 1) {
-          setNextLesson(await fetchLesson(lessonFiles[currentLessonIndex + 1]));
-        } else {
-          setNextLesson(null);
-        }
-      }
-    };
-    fetchAdjacentLessons();
-  }, [lessonFiles, currentLessonIndex]);
   return (
     <div className="p-8 w-full max-w-4xl mx-auto h-full flex flex-col items-center">
       {isLoading || !currentLesson ? (
@@ -265,7 +197,7 @@ export function ClassRoomMainContent() {
               variant="outline"
               disabled={currentLessonIndex === 0}
               onClick={() =>
-                setCurrentLessonIndex((idx) => Math.max(0, idx - 1))
+                setCurrentLessonIndex(Math.max(0, currentLessonIndex - 1))
               }
             >
               {`Previous${
@@ -276,10 +208,10 @@ export function ClassRoomMainContent() {
             </Button>
             <Button
               variant="outline"
-              disabled={currentLessonIndex === lessonFiles.length - 1}
+              disabled={currentLessonIndex === lessons.length - 1}
               onClick={() =>
-                setCurrentLessonIndex((idx) =>
-                  Math.min(lessonFiles.length - 1, idx + 1)
+                setCurrentLessonIndex(
+                  Math.min(lessons.length - 1, currentLessonIndex + 1)
                 )
               }
             >
@@ -295,3 +227,5 @@ export function ClassRoomMainContent() {
     </div>
   );
 }
+
+export { ClassRoomMainContent };
