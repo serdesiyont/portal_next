@@ -15,9 +15,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import ClassRoomLesson from "@/components/class-room/class-room-lesson";
 import ClassRoomExercise from "@/components/class-room/class-room-exercise";
-import ReferenceSidebar from "@/components/class-room/reference/reference-sidebar";
-import ReferenceMainContent from "@/components/class-room/reference/refence-main-content";
-import { fetchPdfList, PdfDoc } from "@/lib/pdf-loader";
 import Reference from "@/components/class-room/class-room-refernce";
 
 
