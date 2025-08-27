@@ -50,7 +50,12 @@ export interface CodeEditorState {
   setLanguage: (language: string) => void;
   setTheme: (theme: string) => void;
   setFontSize: (fontSize: number) => void;
-  runCode: (language: string) => Promise<void>;
+  runCode: (exercise: {
+    id: number;
+    title: string;
+    description: string;
+    language: string;
+  }) => Promise<void>;
 }
 
 export interface LanguageOption {

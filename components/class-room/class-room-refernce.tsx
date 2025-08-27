@@ -1,39 +1,57 @@
 "use client";
+import { useEffect, useState } from "react";
 import ReferenceSidebar from "./reference/reference-sidebar";
 import ReferenceMainContent from "./reference/refence-main-content";
-import { ChatContent, ChatWidget } from "./chat-widget";
-import { useState } from "react";
-import type { PdfDoc } from "@/lib/pdf-loader";
+import { fetchPdfList, type PdfDoc } from "@/lib/pdf-loader";
+import {ChatContent, ChatWidget } from "./chat-widget";
 
 export default function Reference() {
+  const [pdfs, setPdfs] = useState<PdfDoc[]>([]);
+  const [selectedPdf, setSelectedPdf] = useState<PdfDoc | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [selectedPdf, setSelectedPdf] = useState<PdfDoc | undefined>(undefined);
   const handleChatToggle = (isOpen: boolean) => setIsChatOpen(isOpen);
 
+  
+
+  useEffect(() => {
+    const getPdfs = async () => {
+      try {
+        const pdfList = await fetchPdfList();
+        setPdfs(pdfList);
+        if (pdfList.length > 0) {
+          setSelectedPdf(pdfList[0]);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    getPdfs();
+  }, []);
+
   return (
-    <div className="flex flex-1 overflow-hidden">
-      {/* Sidebar for reference */}
-      <aside className="w-64 border-r bg-muted/30 flex-shrink-0 overflow-y-auto">
-        <ReferenceSidebar
-          onSelect={setSelectedPdf}
-          selectedUrl={selectedPdf?.url}
-        />
-      </aside>
-      {/* Main Content */}
+    <div className="flex h-full relative">
+      <ReferenceSidebar
+        pdfs={pdfs}
+        selectedPdf={selectedPdf}
+        onSelectPdf={setSelectedPdf}
+        loading={loading}
+      />
       <div className="flex-1 overflow-y-auto">
-        <ReferenceMainContent selectedUrl={selectedPdf?.url} />
+        <ReferenceMainContent selectedUrl={selectedPdf?.address} />
       </div>
       {isChatOpen ? (
-        <aside className="w-[500px] flex-shrink-0 overflow-hidden border-l">
-          <ChatContent
-            onClose={() => handleChatToggle(false)}
-            showHeader={true}
-            className="h-full"
-          />
-        </aside>
-      ) : (
-        <ChatWidget onChatToggle={handleChatToggle} />
-      )}
-    </div>
+                <aside className="w-[500px] flex-shrink-0 overflow-hidden border-l">
+                  <ChatContent
+                    onClose={() => handleChatToggle(false)}
+                    showHeader={true}
+                    className="h-full"
+                  />
+                </aside>
+              ) : (
+                <ChatWidget onChatToggle={handleChatToggle} />
+              )}
+      </div>
+    
   );
 }

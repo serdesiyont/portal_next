@@ -5,6 +5,9 @@ const BASE_URL = process.env.BASE_DEV_URL || "http://localhost:8888";
 
 const api = axios.create({
   baseURL: BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 // Attach token to requests

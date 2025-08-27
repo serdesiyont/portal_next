@@ -4,11 +4,21 @@ import { useCodeEditorStore } from "@/lib/useCodeEditorStore";
 import { motion } from "framer-motion";
 import { Loader2, Play } from "lucide-react";
 
-function RunButton({ language }: { language: string }) {
-  const { runCode, isRunning } = useCodeEditorStore();
+function RunButton({
+  exercise,
+}: {
+  exercise: {
+    id: number;
+    title: string;
+    description: string;
+    language: string;
+  };
+}) {
+  const { runCode, isRunning, getCode } = useCodeEditorStore();
 
   const handleRun = async () => {
-    await runCode(language);
+    const code = getCode();
+    await runCode(exercise);
   };
 
   return (

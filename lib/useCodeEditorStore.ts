@@ -2,6 +2,7 @@ import { CodeEditorState } from "../types/index";
 import { LANGUAGE_RUNTIMES } from "@/components/class-room/exercise/_constants";
 import { create } from "zustand";
 import type * as monaco from "monaco-editor";
+import axios from "./axios";
 
 const getInitialState = () => {
   // if we're on the server, return default values
@@ -71,7 +72,12 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
       });
     },
 
-    runCode: async (language: string) => {
+    runCode: async (exercise: {
+      id: number;
+      title: string;
+      description: string;
+      language: string;
+    }) => {
       const { getCode } = get();
       const code = getCode();
 
@@ -83,28 +89,41 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
       set({ isRunning: true, output: "", error: null });
 
       try {
-        const runtime = LANGUAGE_RUNTIMES[language];
+        const runtime = LANGUAGE_RUNTIMES[exercise.language];
         if (!runtime) {
-          throw new Error(`Unsupported language: ${language}`);
+          throw new Error(`Unsupported language: ${exercise.language}`);
         }
+
+        // Execute on piston first
+        const pistonPayload = {
+          language: runtime.language,
+          version: runtime.version,
+          files: [{ content: code }],
+          code,
+        };
 
         const response = await fetch("https://emkc.org/api/v2/piston/execute", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            language: runtime.language,
-            version: runtime.version,
-            files: [{ content: code }],
-          }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(pistonPayload),
         });
 
+        // Build backend DTO (skip user)
+        const exerciseDto = {
+          id: exercise.id,
+          title: exercise.title,
+          description: exercise.description,
+          language: exercise.language,
+          boilerplate: {
+            code,
+          },
+        };
+
+        const dataa = await axios.post("/exercises/submit", exerciseDto);
+        console.log(dataa.data)
         const data = await response.json();
 
-        console.log("data back from piston:", data);
-
-        // handle API-level erros
+        // handle API-level errors
         if (data.message) {
           set({
             error: data.message,
@@ -116,41 +135,22 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
         // handle compilation errors
         if (data.compile && data.compile.code !== 0) {
           const error = data.compile.stderr || data.compile.output;
-          set({
-            error,
-            executionResult: {
-              code,
-              output: "",
-              error,
-            },
-          });
+          set({ error, executionResult: { code, output: "", error } });
           return;
         }
 
         if (data.run && data.run.code !== 0) {
           const error = data.run.stderr || data.run.output;
-          set({
-            error,
-            executionResult: {
-              code,
-              output: "",
-              error,
-            },
-          });
+          set({ error, executionResult: { code, output: "", error } });
           return;
         }
 
-        // if we get here, execution was successful
+        // success
         const output = data.run.output;
-
         set({
           output: output.trim(),
           error: null,
-          executionResult: {
-            code,
-            output: output.trim(),
-            error: null,
-          },
+          executionResult: { code, output: output.trim(), error: null },
         });
       } catch (error) {
         console.log("Error running code:", error);

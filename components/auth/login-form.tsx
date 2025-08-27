@@ -40,6 +40,7 @@ export function LoginForm({
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [redirecting, setRedirecting] = useState(false);
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMsg("");
@@ -48,7 +49,11 @@ export function LoginForm({
     try {
       const res = await login(formData);
       if (res.ok) {
-        window.location.href = "/class-room";
+        setRedirecting(true);
+        // Show loading animation for 1s before redirect
+        setTimeout(() => {
+          window.location.href = "/class-room";
+        }, 1000);
       } else if (res.status === 401) {
         setErrorMsg("Credentials are incorrect");
       } else {
@@ -120,8 +125,39 @@ export function LoginForm({
                 />
               </div>
               <div className="flex flex-col gap-3">
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Logging in..." : "Login"}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={loading || redirecting}
+                >
+                  {loading ? (
+                    "Logging in..."
+                  ) : redirecting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg
+                        className="animate-spin h-4 w-4 text-green-500"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                        />
+                      </svg>
+                      Redirecting...
+                    </span>
+                  ) : (
+                    "Login"
+                  )}
                 </Button>
                 {errorMsg && (
                   <div className="text-red-500 text-sm text-center">

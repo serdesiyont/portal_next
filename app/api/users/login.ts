@@ -1,5 +1,7 @@
-import cookies from "js-cookie";
 import api from "@/lib/axios";
+import cookies from "js-cookie";
+
+ 
 
 export async function login(formData: {
   email: string;

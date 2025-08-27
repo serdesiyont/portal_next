@@ -2,7 +2,7 @@
 import { SidebarItem } from "@/lib/lesson-loader";
 import { useEffect, useState } from "react";
 import { useLessonContext } from "./LessonProvider";
-import Link from "next/link";
+ 
 
 interface SidebarItemWithLink extends SidebarItem {
   link?: string;

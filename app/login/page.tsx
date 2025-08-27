@@ -1,5 +1,16 @@
+"use client";
 import { LoginForm } from "@/components/auth/login-form";
+import Cookies from "js-cookie";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 export default function Page() {
+  const router = useRouter();
+  useEffect(() => {
+    const token = Cookies.get("access_token");
+    if (token) {
+      router.replace("/class-room");
+    }
+  }, [router]);
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">

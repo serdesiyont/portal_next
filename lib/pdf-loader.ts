@@ -1,12 +1,12 @@
 export interface PdfDoc {
-  name: string;
-  url: string;
-  displayName: string;
+  title: string;
+  address: string;
+  user?: any;
 }
 
 export async function fetchPdfList(): Promise<PdfDoc[]> {
-  const res = await fetch("/api/pdfs", { cache: "no-store" });
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.pdfs as PdfDoc[];
+  const axios = (await import("./axios")).default;
+  const res = await axios.get<PdfDoc[]>("/resources");
+  return res.data || [];
 }
+

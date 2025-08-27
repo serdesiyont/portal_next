@@ -15,7 +15,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import ClassRoomLesson from "@/components/class-room/class-room-lesson";
 import ClassRoomExercise from "@/components/class-room/class-room-exercise";
+import ReferenceSidebar from "@/components/class-room/reference/reference-sidebar";
+import ReferenceMainContent from "@/components/class-room/reference/refence-main-content";
+import { fetchPdfList, PdfDoc } from "@/lib/pdf-loader";
 import Reference from "@/components/class-room/class-room-refernce";
+
+
+ 
 
 export default function ChromaDocsClone() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -141,12 +147,17 @@ export default function ChromaDocsClone() {
       </nav>
 
       {/* Main Layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Main Content */}
-        {sidebarSection === "lesson" && <ClassRoomLesson />}
-        {sidebarSection === "exercise" && <ClassRoomExercise />}
-        {sidebarSection === "reference" && <Reference />}
-      </div>
+      <main className="flex-1 flex overflow-hidden">
+        {/* Main content area */}
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          {/* Content based on sidebar selection */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {sidebarSection === "lesson" && <ClassRoomLesson />}
+            {sidebarSection === "exercise" && <ClassRoomExercise />}
+            {sidebarSection === "reference" && <Reference />}
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
