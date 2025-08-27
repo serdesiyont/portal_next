@@ -5,7 +5,12 @@ export interface LessonDto {
   id: number;
   title: string;
   address: string;
-  user?: unknown;
+  user?: {
+    name: string;
+    email: string;
+    division: string;
+    role: string;
+  };
 }
 
 export interface SidebarItem {
@@ -84,7 +89,7 @@ function parseMarkdownHeadings(markdown: string): SidebarItem[] {
 
 // Load a lesson's markdown using its address (absolute URL or backend-relative path) via axios
 export async function fetchLesson(address: string): Promise<LessonContent> {
-  const client = axios.create()
+  const client = axios.create();
 
   const url = address; // if relative, api.get will prefix baseURL
 
@@ -102,6 +107,11 @@ export async function fetchLesson(address: string): Promise<LessonContent> {
 export async function fetchLessonList(): Promise<string[]> {
   const { data } = await api.get<LessonDto[]>("/lessons");
   return (data || []).map((l) => l.address);
+}
+
+export async function fetchLessons(): Promise<LessonDto[]> {
+  const { data } = await api.get<LessonDto[]>("/lessons");
+  return data || [];
 }
 
 export { slugify };
