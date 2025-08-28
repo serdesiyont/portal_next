@@ -2,11 +2,11 @@
 
 import * as React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Copy, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { fetchLesson, LessonContent, slugify } from "@/lib/lesson-loader";
+import { Copy, Save, XIcon, Maximize2, Minimize2 } from "lucide-react";
+import { slugify } from "@/lib/lesson-loader";
 
 const languageMap: { [key: string]: string | undefined } = {
   terminal: "bash",
@@ -68,17 +68,22 @@ function CodeBlock({ title, code }: { title: string; code: string }) {
   );
 }
 
-function LessonPreview({ content }: { content: LessonContent }) {
-  if (!content?.raw) return null;
-  const blocks = content.raw.split(
+function RenderMarkdown({ markdown }: { markdown: string }) {
+  if (!markdown)
+    return (
+      <p className="text-muted-foreground">
+        Start typing markdown on the left…
+      </p>
+    );
+  const blocks = markdown.split(
     /(\n```[a-zA-Z]*\n[\s\S]*?\n```|\n{% Video[\s\S]*?%})/g
   );
   return (
-    <div className="prose prose-gray dark:prose-invert max-w-none border-b pb-8 mb-8">
+    <div className="prose prose-gray dark:prose-invert max-w-none">
       {blocks.map((block, index) => {
         if (!block) return null;
         const videoMatch = block.match(
-          /{% Video link="([^"]+)" title="([^"]+)" \/ %}/
+          /{% Video link=\"([^\"]+)\" title=\"([^\"]+)\" \/ %}/
         );
         if (videoMatch) {
           const [_, link, title] = videoMatch;
@@ -150,66 +155,104 @@ function LessonPreview({ content }: { content: LessonContent }) {
   );
 }
 
-export default function LessonPreviewSheet({
+export default function LessonBuilderDialog({
   open,
   onOpenChange,
-  title,
-  address,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title?: string;
-  address?: string;
 }) {
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [content, setContent] = React.useState<LessonContent | null>(null);
+  const [markdown, setMarkdown] = React.useState<string>(
+    '# New Lesson\n\nStart writing your lesson here.\n\n## Code example\n\n```python\nprint(\'Hello, world!\')\n```\n\n{% Video link="https://www.youtube.com/embed/dQw4w9WgXcQ" title="Sample Video" / %}\n'
+  );
+  const [fileName, setFileName] = React.useState<string>("lesson.md");
+  const [fullscreen, setFullscreen] = React.useState(false);
 
   React.useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      if (!open || !address) return;
-      try {
-        setLoading(true);
-        setError(null);
-        const c = await fetchLesson(address);
-        if (!cancelled) setContent(c);
-      } catch (e) {
-        if (!cancelled) setError("Failed to load preview");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    // derive filename from first heading if available
+    const m = markdown.match(/^#\s+(.+)/m);
+    if (m && m[1]) {
+      const base = slugify(m[1]).replace(/\.+$/, "");
+      if (base) setFileName(`${base}.md`);
     }
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [open, address]);
+  }, [markdown]);
+
+  const handleSave = () => {
+    const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName || "lesson.md";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-background/40 backdrop-blur-sm sm:backdrop-blur-md" />
-        <Dialog.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background shadow-lg focus:outline-hidden max-h-[90vh] overflow-hidden">
-          <Dialog.Title className="sr-only">{title || "Preview"}</Dialog.Title>
-          <button
-            className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute right-4 top-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
-            onClick={() => onOpenChange(false)}
-            aria-label="Close"
+        <Dialog.Content
+          className={`data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed z-50 bg-background shadow-lg focus:outline-hidden overflow-hidden ${
+            fullscreen
+              ? "inset-0 w-screen h-screen rounded-none border-0"
+              : "left-1/2 top-1/2 w-[96vw] max-w-6xl -translate-x-1/2 -translate-y-1/2 rounded-xl border max-h-[92vh]"
+          }`}
+        >
+          <Dialog.Title className="sr-only">Build lesson</Dialog.Title>
+          <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Filename:</span>
+              <input
+                value={fileName}
+                onChange={(e) => setFileName(e.target.value)}
+                className="h-8 w-56 rounded-md border bg-background px-2 text-foreground"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setFullscreen((f) => !f)}
+              >
+                {fullscreen ? (
+                  <Minimize2 className="mr-2 h-4 w-4" />
+                ) : (
+                  <Maximize2 className="mr-2 h-4 w-4" />
+                )}
+                {fullscreen ? "Exit full" : "Full screen"}
+              </Button>
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                <XIcon className="mr-2 h-4 w-4" /> Quit
+              </Button>
+              <Button
+                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={handleSave}
+              >
+                <Save className="mr-2 h-4 w-4" /> Save .md
+              </Button>
+            </div>
+          </div>
+          <div
+            className={`flex flex-col md:flex-row gap-4 p-4 ${
+              fullscreen ? "h-[calc(100vh-56px)]" : "h-[80vh]"
+            }`}
           >
-            <XIcon className="size-4" />
-          </button>
-          <div className="p-6 sm:p-8 w-full max-w-4xl mx-auto overflow-y-auto max-h-[85vh]">
-            <h2 className="text-xl font-semibold mb-4">{title || "Preview"}</h2>
-            {loading && (
-              <div className="text-sm text-muted-foreground">
-                Loading preview…
+            <div className="md:w-1/2 w-full h-full flex flex-col">
+              <label className="text-sm font-medium mb-2">Markdown</label>
+              <textarea
+                value={markdown}
+                onChange={(e) => setMarkdown(e.target.value)}
+                className="w-full h-full min-h-[50vh] resize-none rounded-md border bg-background p-3 font-mono text-sm"
+                placeholder="# Title\n\nWrite your markdown here..."
+              />
+            </div>
+            <div className="md:w-1/2 w-full h-full overflow-auto">
+              <label className="text-sm font-medium mb-2 block">Preview</label>
+              <div className="p-2">
+                <RenderMarkdown markdown={markdown} />
               </div>
-            )}
-            {error && <div className="text-sm text-destructive">{error}</div>}
-            {!loading && !error && content && (
-              <LessonPreview content={content} />
-            )}
+            </div>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

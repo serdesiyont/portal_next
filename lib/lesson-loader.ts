@@ -5,6 +5,7 @@ export interface LessonDto {
   id: number;
   title: string;
   address: string;
+  schedule?: string; // ISO timestamp from backend
   user?: {
     name: string;
     email: string;
@@ -110,8 +111,36 @@ export async function fetchLessonList(): Promise<string[]> {
 }
 
 export async function fetchLessons(): Promise<LessonDto[]> {
-  const { data } = await api.get<LessonDto[]>("/lessons");
+  const { data } = await api.get<LessonDto[]>("/lessons/mentors");
   return data || [];
+}
+
+export async function createLesson(params: {
+  title: string;
+  file: File | Blob;
+  schedule: string | Date; // expects ISO string or Date; will be converted to ISO
+}): Promise<LessonDto> {
+  const form = new FormData();
+  form.append("title", params.title);
+  const isoSchedule =
+    typeof params.schedule === "string"
+      ? new Date(params.schedule).toISOString()
+      : params.schedule.toISOString();
+  form.append("schedule", isoSchedule);
+  form.append("file", params.file);
+
+  const { data } = await api.post<LessonDto>("/lessons", form, {
+    headers: {
+      // Let axios set the correct boundary automatically; explicit header is optional
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return data;
+}
+
+export async function deleteLesson(id: number): Promise<any> {
+  const { data } = await api.delete(`/lessons/${id}`);
+  return data;
 }
 
 export { slugify };
