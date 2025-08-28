@@ -11,6 +11,7 @@ import { DataTable } from "@/components/data-table";
 import data from "./data.json";
 import ResourceTableView from "@/components/resources/resource-table-view";
 import { Button } from "@/components/ui/button";
+import ExercisesTableView from "@/components/exercises/exercises-table-view";
 
 export default function Page() {
   const [hash, setHash] = React.useState<string>("#dashboard");
@@ -37,6 +38,12 @@ export default function Page() {
         return (
           <div className="flex flex-1 min-h-0">
             <ResourceTableView />
+          </div>
+        );
+      case "#exercises":
+        return (
+          <div className="flex flex-1 min-h-0">
+            <ExercisesTableView />
           </div>
         );
       case "#dashboard":

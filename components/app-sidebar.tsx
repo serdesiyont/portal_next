@@ -34,7 +34,6 @@ import {
 } from "@/components/ui/sidebar";
 import cookie from "js-cookie";
 
-
 const data = {
   user: {
     name: cookie.get("NAME"),
