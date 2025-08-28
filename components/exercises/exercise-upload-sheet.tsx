@@ -37,10 +37,16 @@ export default function ExerciseUploadSheet({
   open,
   onOpenChange,
   onSubmit,
+  mode = "create",
+  initialData,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit?: (data: CreateExerciseForm) => Promise<boolean | void> | boolean | void;
+  onSubmit?: (
+    data: CreateExerciseForm
+  ) => Promise<boolean | void> | boolean | void;
+  mode?: "create" | "edit";
+  initialData?: Partial<CreateExerciseForm>;
 }) {
   const [submitting, setSubmitting] = React.useState(false);
   const [success, setSuccess] = React.useState(false);
@@ -54,6 +60,68 @@ export default function ExerciseUploadSheet({
     boilerplate: "# Write your boilerplate here\n",
     testCases: [""],
   });
+
+  // Hydrate form when opening in edit mode (or whenever initialData provided)
+  React.useEffect(() => {
+    if (!open) return;
+    if (!initialData) return;
+    setData((prev) => ({
+      title: initialData.title ?? prev.title ?? "",
+      description: initialData.description ?? prev.description ?? "",
+      language: initialData.language ?? prev.language ?? "",
+      date: initialData.date ?? prev.date ?? "",
+      time: initialData.time ?? prev.time ?? "",
+      boilerplate: initialData.boilerplate ?? prev.boilerplate ?? "",
+      testCases:
+        initialData.testCases && initialData.testCases.length > 0
+          ? initialData.testCases
+          : prev.testCases ?? [""],
+    }));
+  }, [open, initialData]);
+
+  // Insert four spaces when Tab is pressed inside code textareas
+  const insertTabAtSelection = (el: HTMLTextAreaElement) => {
+    const start = el.selectionStart ?? 0;
+    const end = el.selectionEnd ?? 0;
+    const value = el.value;
+    const tab = "    ";
+    return {
+      newValue: value.slice(0, start) + tab + value.slice(end),
+      caret: start + tab.length,
+    };
+  };
+
+  const handleBoilerplateTab = React.useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key !== "Tab") return;
+      e.preventDefault();
+      const el = e.currentTarget;
+      const { newValue, caret } = insertTabAtSelection(el);
+      setData((d) => ({ ...d, boilerplate: newValue }));
+      setTimeout(() => {
+        try {
+          el.selectionStart = el.selectionEnd = caret;
+        } catch {}
+      }, 0);
+    },
+    []
+  );
+
+  const handleTestcaseTab = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+    index: number
+  ) => {
+    if (e.key !== "Tab") return;
+    e.preventDefault();
+    const el = e.currentTarget;
+    const { newValue, caret } = insertTabAtSelection(el);
+    updateTestCase(index, newValue);
+    setTimeout(() => {
+      try {
+        el.selectionStart = el.selectionEnd = caret;
+      } catch {}
+    }, 0);
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -81,21 +149,28 @@ export default function ExerciseUploadSheet({
         const arr = [""];
         return { ...d, testCases: arr };
       }
-      const arr = d.testCases.slice(0, index).concat(d.testCases.slice(index + 1));
+      const arr = d.testCases
+        .slice(0, index)
+        .concat(d.testCases.slice(index + 1));
       return { ...d, testCases: arr };
     });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!data.title || !data.description || !data.language || !data.boilerplate) return;
+    if (!data.title || !data.description || !data.language || !data.boilerplate)
+      return;
     setSubmitting(true);
     setErrorMsg("");
     try {
       let ok: boolean | void = true;
       if (onSubmit) ok = await onSubmit(data);
       if (ok === false) {
-        setErrorMsg("Failed to create exercise. Please check your inputs and try again.");
+        setErrorMsg(
+          `Failed to ${
+            mode === "edit" ? "update" : "create"
+          } exercise. Please check your inputs and try again.`
+        );
         return;
       }
       setSuccess(true);
@@ -112,7 +187,11 @@ export default function ExerciseUploadSheet({
       });
       setSuccess(false);
     } catch (err) {
-      setErrorMsg("Failed to create exercise. Please try again.");
+      setErrorMsg(
+        `Failed to ${
+          mode === "edit" ? "update" : "create"
+        } exercise. Please try again.`
+      );
     } finally {
       setSubmitting(false);
     }
@@ -123,7 +202,9 @@ export default function ExerciseUploadSheet({
       <Dialog.Portal>
         <Dialog.Overlay className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-background/40 backdrop-blur-sm sm:backdrop-blur-md" />
         <Dialog.Content className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed left-1/2 top-1/2 z-50 w-[92vw] max-w-3xl -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-background shadow-lg focus:outline-hidden max-h-[90vh] overflow-hidden">
-          <Dialog.Title className="sr-only">Create exercise</Dialog.Title>
+          <Dialog.Title className="sr-only">
+            {mode === "edit" ? "Update exercise" : "Create exercise"}
+          </Dialog.Title>
           <button
             className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute right-4 top-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
             onClick={() => onOpenChange(false)}
@@ -134,18 +215,25 @@ export default function ExerciseUploadSheet({
           <div className="p-4 sm:p-6 overflow-y-auto max-h-[85vh]">
             <Card className="max-w-3xl mx-auto shadow-none border-0 bg-transparent">
               <CardHeader>
-                <CardTitle>Create exercise</CardTitle>
+                <CardTitle>
+                  {mode === "edit" ? "Update exercise" : "Create exercise"}
+                </CardTitle>
                 <CardDescription>
-                  Provide title, description, language, schedule it, and add
-                  boilerplate & test cases.
+                  {mode === "edit"
+                    ? "Edit fields below and save your changes."
+                    : "Provide title, description, language, schedule it, and add boilerplate & test cases."}
                 </CardDescription>
                 {errorMsg && (
-                  <div className="text-destructive text-sm mt-2">{errorMsg}</div>
+                  <div className="text-destructive text-sm mt-2">
+                    {errorMsg}
+                  </div>
                 )}
                 {success && (
                   <div className="flex items-center gap-2 text-emerald-600 mt-2 animate-in fade-in-0 zoom-in-90">
                     <CheckCircle2 className="size-5" />
-                    <span>Exercise created</span>
+                    <span>
+                      Exercise {mode === "edit" ? "updated" : "created"}
+                    </span>
                   </div>
                 )}
               </CardHeader>
@@ -229,6 +317,7 @@ export default function ExerciseUploadSheet({
                       rows={6}
                       value={data.boilerplate}
                       onChange={handleChange}
+                      onKeyDown={handleBoilerplateTab}
                       required
                     />
                     <p className="text-xs text-muted-foreground">
@@ -240,14 +329,20 @@ export default function ExerciseUploadSheet({
                     <Label>Test Cases</Label>
                     <div className="space-y-2">
                       {data.testCases.map((tc, i) => (
-                        <div key={i} className="grid grid-cols-[80px_1fr_auto_auto] items-center gap-2">
-                          <span className="text-sm text-muted-foreground">{`test${i + 1}`}</span>
+                        <div
+                          key={i}
+                          className="grid grid-cols-[80px_1fr_auto_auto] items-center gap-2"
+                        >
+                          <span className="text-sm text-muted-foreground">{`test${
+                            i + 1
+                          }`}</span>
                           <Textarea
                             value={tc}
                             onChange={(e) => updateTestCase(i, e.target.value)}
                             placeholder="Enter test code (supports multiple lines)"
                             className="font-mono min-h-0"
                             rows={3}
+                            onKeyDown={(e) => handleTestcaseTab(e, i)}
                             required={i === 0}
                           />
                           <Button
@@ -261,14 +356,23 @@ export default function ExerciseUploadSheet({
                             <Minus className="size-4" />
                           </Button>
                           {i === data.testCases.length - 1 && (
-                            <Button type="button" variant="outline" size="sm" onClick={addTestCase} aria-label="Add test">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={addTestCase}
+                              aria-label="Add test"
+                            >
                               <Plus className="size-4" />
                             </Button>
                           )}
                         </div>
                       ))}
                     </div>
-                    <p className="text-xs text-muted-foreground">Add multiple tests as needed. Newlines will be encoded automatically.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Add multiple tests as needed. Newlines will be encoded
+                      automatically.
+                    </p>
                   </div>
                 </CardContent>
                 <CardFooter className="justify-end gap-2">
@@ -285,7 +389,13 @@ export default function ExerciseUploadSheet({
                     className="bg-emerald-600 hover:bg-emerald-700 text-white"
                     disabled={submitting}
                   >
-                    {submitting ? "Creating…" : "Create"}
+                    {submitting
+                      ? mode === "edit"
+                        ? "Updating…"
+                        : "Creating…"
+                      : mode === "edit"
+                      ? "Update"
+                      : "Create"}
                   </Button>
                 </CardFooter>
               </form>

@@ -1,7 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { fetchMentorExercises, ExerciseAllDto, deleteExercise, createExercise } from "@/lib/exercise-loader";
+import {
+  fetchMentorExercises,
+  ExerciseAllDto,
+  deleteExercise,
+  createExercise,
+  updateExercise,
+} from "@/lib/exercise-loader";
 import { toast } from "sonner";
 import {
   Table,
@@ -13,11 +19,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { MoreVertical, Pencil, Trash2, UploadCloud } from "lucide-react";
-import ExerciseUploadSheet, { CreateExerciseForm } from "@/components/exercises/exercise-upload-sheet";
+import ExerciseUploadSheet, {
+  CreateExerciseForm,
+} from "@/components/exercises/exercise-upload-sheet";
 import { formatDistanceToNow } from "date-fns";
 
 function formatCodePreserveWhitespace(input: unknown): string {
@@ -26,7 +45,9 @@ function formatCodePreserveWhitespace(input: unknown): string {
   return input.replace(/\\n|\/n/g, "\n");
 }
 
-function stringifyMapPreserving(input: Record<string, unknown> | undefined): string {
+function stringifyMapPreserving(
+  input: Record<string, unknown> | undefined
+): string {
   if (!input) return "";
   const parts: string[] = [];
   for (const [k, v] of Object.entries(input)) {
@@ -45,7 +66,9 @@ function formatHumanSchedule(iso?: string) {
   const now = new Date();
 
   const isSameDay = (a: Date, b: Date) =>
-    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
 
   const addDays = (date: Date, days: number) => {
     const copy = new Date(date);
@@ -57,8 +80,15 @@ function formatHumanSchedule(iso?: string) {
   const tomorrow = addDays(now, 1);
   const yesterday = addDays(now, -1);
 
-  const timePart = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
-  const datePart = d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  const timePart = d.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const datePart = d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
   const rel = formatDistanceToNow(d, { addSuffix: true });
 
   if (isSameDay(d, today)) return `Today, ${timePart} • ${rel}`;
@@ -78,6 +108,12 @@ export default function ExercisesTableView() {
   const [error, setError] = React.useState<string | null>(null);
   const [deletingId, setDeletingId] = React.useState<number | null>(null);
   const [uploadOpen, setUploadOpen] = React.useState(false);
+
+  // Edit mode state
+  const [sheetMode, setSheetMode] = React.useState<"create" | "edit">("create");
+  const [editingId, setEditingId] = React.useState<number | null>(null);
+  const [editInitialData, setEditInitialData] =
+    React.useState<Partial<CreateExerciseForm> | null>(null);
 
   const load = React.useCallback(async () => {
     try {
@@ -115,13 +151,67 @@ export default function ExercisesTableView() {
     };
   }, []);
 
+  // Helpers to map API -> form
+  const decodeText = (val: unknown) =>
+    typeof val === "string"
+      ? val.replaceAll("/n", "\n").replaceAll("\\n", "\n")
+      : "";
+
+  const toFormInitialData = (
+    ex: ExerciseAllDto
+  ): Partial<CreateExerciseForm> => {
+    // schedule to date/time (use UTC parts to match creation behavior)
+    let date = "";
+    let time = "";
+    if (ex.schedule) {
+      const d = new Date(ex.schedule);
+      const iso = d.toISOString();
+      date = iso.slice(0, 10);
+      time = iso.slice(11, 16);
+    }
+
+    // boilerplate: prefer .code if string else first string field
+    let boilerText = "";
+    const bp = ex.boilerplate || {};
+    if (typeof (bp as any).code === "string") {
+      boilerText = decodeText((bp as any).code);
+    } else {
+      const firstStr = Object.values(bp).find((v) => typeof v === "string");
+      boilerText = decodeText(firstStr as any);
+    }
+
+    // test cases sorted by testN
+    const tcRec = ex.testCases || {};
+    const keys = Object.keys(tcRec).sort((a, b) => {
+      const na = parseInt(a.replace(/\D/g, "")) || 0;
+      const nb = parseInt(b.replace(/\D/g, "")) || 0;
+      return na - nb;
+    });
+    const testCases = keys.map((k) => decodeText((tcRec as any)[k]));
+
+    return {
+      title: ex.title,
+      description: ex.description,
+      language: ex.language,
+      date,
+      time,
+      boilerplate: boilerText || "# Write your boilerplate here\n",
+      testCases: testCases.length ? testCases : [""],
+    };
+  };
+
   return (
     <div className="flex-1 min-h-0 p-4 lg:p-6 overflow-auto">
       <div className="max-w-full">
         <div className="flex items-center justify-end gap-2 mb-4">
           <Button
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
-            onClick={() => setUploadOpen(true)}
+            onClick={() => {
+              setSheetMode("create");
+              setEditingId(null);
+              setEditInitialData(null);
+              setUploadOpen(true);
+            }}
           >
             <UploadCloud className="mr-2 h-4 w-4" /> Upload exercise
           </Button>
@@ -180,7 +270,9 @@ export default function ExercisesTableView() {
                     <TooltipProvider delayDuration={150}>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="text-muted-foreground cursor-help">{ex.user.name}</span>
+                          <span className="text-muted-foreground cursor-help">
+                            {ex.user.name}
+                          </span>
                         </TooltipTrigger>
                         <TooltipContent>{ex.user.email}</TooltipContent>
                       </Tooltip>
@@ -194,7 +286,7 @@ export default function ExercisesTableView() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="cursor-help  text-muted-foreground underline-offset-4">
-                          Hover
+                          Code
                         </span>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-[520px] p-0">
@@ -239,7 +331,13 @@ export default function ExercisesTableView() {
                     <DropdownMenuContent align="end" className="w-40">
                       <DropdownMenuItem
                         className="gap-2"
-                        onClick={() => toast.info("Update not implemented yet")}
+                        onClick={() => {
+                          if (typeof ex.id !== "number") return;
+                          setSheetMode("edit");
+                          setEditingId(ex.id);
+                          setEditInitialData(toFormInitialData(ex));
+                          setUploadOpen(true);
+                        }}
                       >
                         <Pencil className="size-4" /> Update
                       </DropdownMenuItem>
@@ -287,30 +385,65 @@ export default function ExercisesTableView() {
 
       <ExerciseUploadSheet
         open={uploadOpen}
-        onOpenChange={setUploadOpen}
+        onOpenChange={(o) => {
+          setUploadOpen(o);
+          if (!o) {
+            // reset edit state when closing
+            setTimeout(() => {
+              setSheetMode("create");
+              setEditingId(null);
+              setEditInitialData(null);
+            }, 0);
+          }
+        }}
+        mode={sheetMode}
+        initialData={editInitialData ?? undefined}
         onSubmit={async (form: CreateExerciseForm) => {
           try {
-            const schedule = form.date && form.time ? new Date(`${form.date}T${form.time}:00.000Z`).toISOString() : undefined;
-            const boilerplate = { code: (form.boilerplate ?? "").replaceAll("\n", "/n") } as Record<string, unknown>;
+            const schedule =
+              form.date && form.time
+                ? new Date(`${form.date}T${form.time}:00.000Z`).toISOString()
+                : undefined;
+            const boilerplate = {
+              code: (form.boilerplate ?? "").replaceAll("\n", "/n"),
+            } as Record<string, unknown>;
             const testCases: Record<string, unknown> = {};
             (form.testCases || []).forEach((val, idx) => {
               const key = `test${idx + 1}`;
               testCases[key] = (val ?? "").replaceAll("\n", "/n");
             });
 
-            await createExercise({
-              title: form.title,
-              description: form.description,
-              language: form.language,
-              boilerplate,
-              testCases,
-              schedule,
-            });
-            toast.success("Exercise created");
+            if (sheetMode === "edit" && typeof editingId === "number") {
+              await updateExercise(editingId, {
+                title: form.title,
+                description: form.description,
+                language: form.language,
+                boilerplate,
+                testCases,
+                schedule,
+              });
+              toast.success("Exercise updated");
+            } else {
+              await createExercise({
+                title: form.title,
+                description: form.description,
+                language: form.language,
+                boilerplate,
+                testCases,
+                schedule,
+              });
+              toast.success("Exercise created");
+            }
+
             await load();
             return true;
           } catch (e: any) {
-            toast.error(e?.message || "Failed to create exercise");
+            toast.error(
+              e?.message ||
+                (sheetMode === "edit"
+                  ? "Failed to update exercise"
+                  : "Failed to create exercise")
+            );
             return false;
           }
         }}

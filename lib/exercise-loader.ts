@@ -85,3 +85,25 @@ export async function createExercise(payload: {
     throw new Error(error?.message || "Failed to create exercise");
   }
 }
+
+export async function updateExercise(
+  id: number,
+  payload: {
+    title: string;
+    description: string;
+    language: string;
+    boilerplate: Record<string, unknown>;
+    testCases: Record<string, unknown>;
+    schedule?: string; // ISO string
+  }
+): Promise<any> {
+  try {
+    const res = await axios.put(`/exercises/${id}`, payload, {
+      headers: { "Content-Type": "application/json" },
+    });
+    return res.data;
+  } catch (error: any) {
+    console.error(`Failed to update exercise ${id}:`, error);
+    throw new Error(error?.message || "Failed to update exercise");
+  }
+}
