@@ -1,9 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import ReferenceSidebar from "./reference/reference-sidebar";
 import ReferenceMainContent from "./reference/refence-main-content";
 import { fetchPdfList, type PdfDoc } from "@/lib/pdf-loader";
-import {ChatContent, ChatWidget } from "./chat-widget";
+import { ChatContent, ChatWidget } from "./chat-widget";
+import { Button } from "@/components/ui/button";
+import { PanelLeftIcon } from "lucide-react";
 
 export default function Reference() {
   const [pdfs, setPdfs] = useState<PdfDoc[]>([]);
@@ -11,8 +13,7 @@ export default function Reference() {
   const [loading, setLoading] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const handleChatToggle = (isOpen: boolean) => setIsChatOpen(isOpen);
-
-  
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     const getPdfs = async () => {
@@ -30,28 +31,91 @@ export default function Reference() {
   }, []);
 
   return (
-    <div className="flex h-full relative">
-      <ReferenceSidebar
-        pdfs={pdfs}
-        selectedPdf={selectedPdf}
-        onSelectPdf={setSelectedPdf}
-        loading={loading}
-      />
+    <div className="flex h-full relative flex-col md:flex-row">
+      {/* Top bar with sidebar trigger on mobile */}
+      <div className="md:hidden sticky top-0 z-20 w-full border-b bg-background p-2 flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7 -ml-1"
+          aria-expanded={isSidebarOpen}
+          aria-controls="mobile-sidebar"
+          onClick={() => setIsSidebarOpen((v) => !v)}
+        >
+          <PanelLeftIcon />
+          <span className="sr-only">Toggle Sidebar</span>
+        </Button>
+        <span className="text-sm">Menu</span>
+      </div>
+
+      {/* Desktop sidebar */}
+      <aside className="hidden md:block w-64 border-r bg-muted/30 flex-shrink-0 overflow-y-auto">
+        <ReferenceSidebar
+          pdfs={pdfs}
+          selectedPdf={selectedPdf}
+          onSelectPdf={setSelectedPdf}
+          loading={loading}
+        />
+      </aside>
+
+      {/* Main content */}
       <div className="flex-1 overflow-y-auto">
         <ReferenceMainContent selectedUrl={selectedPdf?.address} />
       </div>
+
+      {/* Chat panel / widget */}
       {isChatOpen ? (
-                <aside className="w-[500px] flex-shrink-0 overflow-hidden border-l">
-                  <ChatContent
-                    onClose={() => handleChatToggle(false)}
-                    showHeader={true}
-                    className="h-full"
-                  />
-                </aside>
-              ) : (
-                <ChatWidget onChatToggle={handleChatToggle} />
-              )}
-      </div>
-    
+        <aside className="w-full md:w-[500px] flex-shrink-0 overflow-hidden border-l">
+          <ChatContent
+            onClose={() => handleChatToggle(false)}
+            showHeader={true}
+            className="h-full"
+          />
+        </aside>
+      ) : (
+        <ChatWidget onChatToggle={handleChatToggle} />
+      )}
+
+      {/* Mobile sidebar overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 flex md:hidden"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+          <aside
+            id="mobile-sidebar"
+            className="relative ml-0 h-full w-4/5 max-w-xs bg-background border-r shadow-xl"
+          >
+            <div className="flex items-center justify-between border-b p-2">
+              <span className="text-sm font-medium">References</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSidebarOpen(false)}
+                aria-label="Close sidebar"
+              >
+                Close
+              </Button>
+            </div>
+            <div className="h-[calc(100%-44px)] overflow-y-auto">
+              <ReferenceSidebar
+                pdfs={pdfs}
+                selectedPdf={selectedPdf}
+                onSelectPdf={(pdf) => {
+                  setSelectedPdf(pdf);
+                  setIsSidebarOpen(false);
+                }}
+                loading={loading}
+              />
+            </div>
+          </aside>
+        </div>
+      )}
+    </div>
   );
 }

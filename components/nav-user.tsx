@@ -24,7 +24,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { logout } from "@/app/api/users/login";
+import { logout } from "@/lib/login";
 import { useRouter } from "next/navigation";
 
 export function NavUser({

@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import React, { useState } from "react";
 import { Home } from "lucide-react";
-import { login } from "@/app/api/users/login";
+import { login } from "@/lib/login";
 export function LoginForm({
   className,
   ...props

@@ -25,7 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import ProgressBar from "@/components/ui/progress-bar";
 import Link from "next/link";
-import { register } from "@/app/api/users/register";
+import { register } from "@/lib/register";
 
 const PRIMARY_COLOR = "var(--primary)"; // Linked to index.css
 const SECONDARY_COLOR = "var(--chart-2)"; // Linked to index.css
@@ -255,7 +255,7 @@ export function RegisterForm() {
         );
       }
     }
-    console.log(data)
+    console.log(data);
     return data;
   }
 
