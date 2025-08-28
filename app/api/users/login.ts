@@ -1,20 +1,17 @@
 import api from "@/lib/axios";
 import cookies from "js-cookie";
 
- 
-
-export async function login(formData: {
-  email: string;
-  password: string;
-}) {
+export async function login(formData: { email: string; password: string }) {
   try {
     const data = JSON.stringify(formData);
     const response = await api.post("/auth/login", data);
     localStorage.setItem("ROLE", response.data.ROLE);
     localStorage.setItem("DIVISION", response.data.DIVISION);
+    cookies.set("NAME", response.data.NAME);
+    cookies.set("EMAIL", response.data.EMAIL);
     cookies.set("access_token", response.data.ACCESS_TOKEN, { expires: 1 });
     cookies.set("refresh_token", response.data.REFRESH_TOKEN, { expires: 7 });
-    
+
     return new Response(JSON.stringify(response.data), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -27,5 +24,21 @@ export async function login(formData: {
       status,
       headers: { "Content-Type": "application/json" },
     });
+  }
+}
+
+export function logout(): boolean {
+  try {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("ROLE");
+      localStorage.removeItem("DIVISION");
+    }
+    cookies.remove("NAME");
+    cookies.remove("EMAIL");
+    cookies.remove("access_token");
+    cookies.remove("refresh_token");
+    return true;
+  } catch (e) {
+    return false;
   }
 }

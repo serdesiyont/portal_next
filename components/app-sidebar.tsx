@@ -32,11 +32,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import cookie from "js-cookie";
+
 
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
+    name: cookie.get("NAME"),
+    email: cookie.get("EMAIL"),
     avatar: "/placeholder-user.jpg",
     // avatar: "/avatars/shadcn.jpg",
   },
@@ -116,21 +118,21 @@ const data = {
     },
   ],
   navSecondary: [
-    {
-      title: "Settings",
-      url: "#settings",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#help",
-      icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "#search",
-      icon: IconSearch,
-    },
+    // {
+    //   title: "Settings",
+    //   url: "#settings",
+    //   icon: IconSettings,
+    // },
+    // {
+    //   title: "Get Help",
+    //   url: "#help",
+    //   icon: IconHelp,
+    // },
+    // {
+    //   title: "Search",
+    //   url: "#search",
+    //   icon: IconSearch,
+    // },
   ],
   documents: [
     {
