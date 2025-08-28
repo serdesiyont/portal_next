@@ -1,12 +1,6 @@
 "use client";
 
 import * as React from "react";
-import {
-  fetchLessons,
-  LessonDto,
-  createLesson,
-  deleteLesson as deleteLessonApi,
-} from "@/lib/lesson-loader";
 import { toast } from "sonner";
 import {
   Table,
@@ -25,42 +19,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import LessonPreviewSheet from "@/components/lessons/lesson-preview-sheet";
-import LessonUploadSheet from "@/components/lessons/lesson-upload-sheet";
-import LessonBuilderDialog from "@/components/lessons/lesson-builder-dialog";
 import {
-  MoreVertical,
+  fetchResources,
+  createResource,
+  deleteResource,
+  ResourceDto,
+} from "@/lib/resource-loader";
+import {
+  Eye,
   ExternalLink,
+  MoreVertical,
   Pencil,
   Trash2,
-  Eye,
   UploadCloud,
-  Hammer,
 } from "lucide-react";
-import {
-  format,
-  formatDistanceToNow,
-  isToday,
-  isTomorrow,
-  isYesterday,
-} from "date-fns";
+import ResourceUploadSheet from "@/components/resources/resource-upload-sheet";
 
-export default function LessonsTableView() {
+export default function ResourceTableView() {
   const [loading, setLoading] = React.useState(true);
-  const [lessons, setLessons] = React.useState<LessonDto[]>([]);
+  const [resources, setResources] = React.useState<ResourceDto[]>([]);
   const [error, setError] = React.useState<string | null>(null);
-  const [deletingId, setDeletingId] = React.useState<number | null>(null);
-
-  // Preview state managed here; content loading handled inside LessonPreviewSheet
-  const [previewOpen, setPreviewOpen] = React.useState(false);
-  const [previewLesson, setPreviewLesson] = React.useState<LessonDto | null>(
-    null
-  );
-  const [selectedLessonId, setSelectedLessonId] = React.useState<number | null>(
-    null
-  );
   const [uploadOpen, setUploadOpen] = React.useState(false);
-  const [builderOpen, setBuilderOpen] = React.useState(false);
+  const [deletingId, setDeletingId] = React.useState<number | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -68,10 +48,10 @@ export default function LessonsTableView() {
       try {
         setLoading(true);
         setError(null);
-        const data = await fetchLessons();
-        if (!cancelled) setLessons(data);
+        const data = await fetchResources();
+        if (!cancelled) setResources(data);
       } catch (e) {
-        if (!cancelled) setError("Failed to load lessons");
+        if (!cancelled) setError("Failed to load resources");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -82,71 +62,42 @@ export default function LessonsTableView() {
     };
   }, []);
 
-  const openPreview = (lesson: LessonDto) => {
-    setPreviewLesson(lesson);
-    setSelectedLessonId(lesson.id);
-    setPreviewOpen(true);
-  };
-
   return (
     <div className="flex-1 min-h-0 p-4 lg:p-6 overflow-auto">
       <div className="max-w-full">
         <div className="flex items-center justify-end gap-2 mb-4">
-          <Button variant="outline" onClick={() => setBuilderOpen(true)}>
-            <Hammer className="mr-2 h-4 w-4" /> Build lesson
-          </Button>
           <Button
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
             onClick={() => setUploadOpen(true)}
           >
-            <UploadCloud className="mr-2 h-4 w-4" /> Upload lesson
+            <UploadCloud className="mr-2 h-4 w-4" /> Upload resource
           </Button>
         </div>
         <Table>
           <TableCaption className="text-left">
             {loading
-              ? "Loading lessons…"
+              ? "Loading resources…"
               : error
               ? error
-              : `${lessons.length} lesson(s)`}
+              : `${resources.length} resource(s)`}
           </TableCaption>
           <TableHeader>
             <TableRow>
               <TableHead className="w-20">ID</TableHead>
               <TableHead>Title</TableHead>
-              <TableHead>Schedule</TableHead>
-              {/* <TableHead>Address</TableHead> */}
               <TableHead>Posted By</TableHead>
               <TableHead className="w-16">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {lessons.map((l, idx) => (
-              <TableRow key={l.id}>
+            {resources.map((r, idx) => (
+              <TableRow key={r.id}>
                 <TableCell>{idx + 1}</TableCell>
-                <TableCell className="font-medium">{l.title}</TableCell>
+                <TableCell className="font-medium">{r.title}</TableCell>
                 <TableCell className="truncate max-w-[260px]">
-                  {l.schedule ? (
-                    <span className="text-muted-foreground" title={l.schedule}>
-                      {(() => {
-                        const d = new Date(l.schedule!);
-                        if (isToday(d)) return `Today, ${format(d, "p")}`;
-                        if (isTomorrow(d)) return `Tomorrow, ${format(d, "p")}`;
-                        if (isYesterday(d))
-                          return `Yesterday, ${format(d, "p")}`;
-                        const rel = formatDistanceToNow(d, { addSuffix: true });
-                        return `${format(d, "PPp")} • ${rel}`;
-                      })()}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-                {/* <TableCell className="truncate max-w-[420px]">{l.address}</TableCell> */}
-                <TableCell className="truncate max-w-[260px]">
-                  {l.user ? (
+                  {r.user ? (
                     <span className="text-muted-foreground">
-                      {l.user.name} • {l.user.email}
+                      {r.user.name} • {r.user.email}
                     </span>
                   ) : (
                     <span className="text-muted-foreground">—</span>
@@ -158,9 +109,11 @@ export default function LessonsTableView() {
                       variant="outline"
                       size="sm"
                       className="gap-1"
-                      onClick={() => openPreview(l)}
+                      asChild
                     >
-                      <Eye className="size-3.5" /> Preview
+                      <a href={r.address} target="_blank" rel="noreferrer">
+                        <Eye className="size-3.5" /> Preview
+                      </a>
                     </Button>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -171,7 +124,7 @@ export default function LessonsTableView() {
                       <DropdownMenuContent align="end" className="w-40">
                         <DropdownMenuItem asChild>
                           <a
-                            href={l.address}
+                            href={r.address}
                             target="_blank"
                             rel="noreferrer"
                             className="gap-2"
@@ -183,23 +136,23 @@ export default function LessonsTableView() {
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="gap-2 text-red-600 focus:text-red-600"
-                          disabled={deletingId === l.id}
+                          disabled={deletingId === r.id}
                           onClick={async () => {
                             try {
-                              setDeletingId(l.id);
-                              const t = toast.loading("Deleting lesson…");
-                              const res = await deleteLessonApi(l.id);
+                              setDeletingId(r.id);
+                              const t = toast.loading("Deleting resource…");
+                              const res = await deleteResource(r.id);
                               toast.success(
                                 typeof res === "string"
                                   ? res
-                                  : "Lesson deleted",
+                                  : "Resource deleted",
                                 { id: t }
                               );
-                              const data = await fetchLessons();
-                              setLessons(data);
+                              const data = await fetchResources();
+                              setResources(data);
                             } catch (e: any) {
                               toast.error(
-                                e?.message || "Failed to delete lesson"
+                                e?.message || "Failed to delete resource"
                               );
                             } finally {
                               setDeletingId(null);
@@ -214,13 +167,13 @@ export default function LessonsTableView() {
                 </TableCell>
               </TableRow>
             ))}
-            {!loading && lessons.length === 0 && !error && (
+            {!loading && resources.length === 0 && !error && (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={4}
                   className="text-center text-muted-foreground py-10"
                 >
-                  No lessons
+                  No resources
                 </TableCell>
               </TableRow>
             )}
@@ -228,30 +181,22 @@ export default function LessonsTableView() {
         </Table>
       </div>
 
-      {/* Preview Sheet */}
-      <LessonPreviewSheet
-        open={previewOpen}
-        onOpenChange={setPreviewOpen}
-        title={previewLesson?.title}
-        address={previewLesson?.address}
-      />
-
-      {/* Upload Sheet */}
-      <LessonUploadSheet
+      <ResourceUploadSheet
         open={uploadOpen}
         onOpenChange={setUploadOpen}
-        onSubmit={async ({ title, date, time, file }) => {
+        onSubmit={async ({ title, file }) => {
           if (!file) return;
-          const schedule = new Date(`${date}T${time}:00.000Z`).toISOString();
-          await createLesson({ title, file, schedule });
-          // refresh list
-          const data = await fetchLessons();
-          setLessons(data);
+          try {
+            await createResource({ title, file });
+            const data = await fetchResources();
+            setResources(data);
+            toast.success("Resource uploaded");
+            setUploadOpen(false);
+          } catch (e: any) {
+            toast.error(e?.message || "Failed to upload resource");
+          }
         }}
       />
-
-      {/* Build Lesson Dialog */}
-      <LessonBuilderDialog open={builderOpen} onOpenChange={setBuilderOpen} />
     </div>
   );
 }

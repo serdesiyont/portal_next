@@ -9,6 +9,8 @@ import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { SectionCards } from "@/components/section-cards";
 import { DataTable } from "@/components/data-table";
 import data from "./data.json";
+import ResourceTableView from "@/components/resources/resource-table-view";
+import { Button } from "@/components/ui/button";
 
 export default function Page() {
   const [hash, setHash] = React.useState<string>("#dashboard");
@@ -29,6 +31,12 @@ export default function Page() {
         return (
           <div className="flex flex-1 min-h-0">
             <LessonsTableView />
+          </div>
+        );
+      case "#resources":
+        return (
+          <div className="flex flex-1 min-h-0">
+            <ResourceTableView />
           </div>
         );
       case "#dashboard":
