@@ -1,5 +1,4 @@
 import { CodeEditorState } from "../types/index";
-import { LANGUAGE_RUNTIMES } from "@/components/class-room/exercise/_constants";
 import { create } from "zustand";
 import type * as monaco from "monaco-editor";
 import axios from "./axios";
@@ -89,25 +88,6 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
       set({ isRunning: true, output: "", error: null });
 
       try {
-        const runtime = LANGUAGE_RUNTIMES[exercise.language];
-        if (!runtime) {
-          throw new Error(`Unsupported language: ${exercise.language}`);
-        }
-
-        // Execute on piston first
-        const pistonPayload = {
-          language: runtime.language,
-          version: runtime.version,
-          files: [{ content: code }],
-          code,
-        };
-
-        const response = await fetch("https://emkc.org/api/v2/piston/execute", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(pistonPayload),
-        });
-
         // Build backend DTO (skip user)
         const exerciseDto = {
           id: exercise.id,
@@ -119,44 +99,49 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
           },
         };
 
-        const dataa = await axios.post("/submit", exerciseDto);
-        console.log(dataa.data)
-        const data = await response.json();
+        const resp = await axios.post("/submit", exerciseDto);
+        const payload = resp?.data;
 
-        // handle API-level errors
-        if (data.message) {
+        // If backend indicates an error, surface it
+        if (
+          payload &&
+          typeof payload === "object" &&
+          (payload.error || payload.message)
+        ) {
+          const errMsg = (payload.error || payload.message) as string;
           set({
-            error: data.message,
-            executionResult: { code, output: "", error: data.message },
+            error: errMsg,
+            executionResult: { code, output: "", error: errMsg },
           });
           return;
         }
 
-        // handle compilation errors
-        if (data.compile && data.compile.code !== 0) {
-          const error = data.compile.stderr || data.compile.output;
-          set({ error, executionResult: { code, output: "", error } });
-          return;
-        }
+        // Normalize output to string
+        const outputStr =
+          typeof payload === "string"
+            ? payload
+            : payload?.output ??
+              payload?.result ??
+              JSON.stringify(payload, null, 2);
 
-        if (data.run && data.run.code !== 0) {
-          const error = data.run.stderr || data.run.output;
-          set({ error, executionResult: { code, output: "", error } });
-          return;
-        }
-
-        // success
-        const output = data.run.output;
         set({
-          output: output.trim(),
+          output: String(outputStr ?? "").trim(),
           error: null,
-          executionResult: { code, output: output.trim(), error: null },
+          executionResult: {
+            code,
+            output: String(outputStr ?? "").trim(),
+            error: null,
+          },
         });
-      } catch (error) {
+      } catch (error: any) {
+        const errMsg =
+          error?.response?.data?.message ||
+          error?.message ||
+          "Error running code";
         console.log("Error running code:", error);
         set({
-          error: "Error running code",
-          executionResult: { code, output: "", error: "Error running code" },
+          error: errMsg,
+          executionResult: { code, output: "", error: errMsg },
         });
       } finally {
         set({ isRunning: false });
