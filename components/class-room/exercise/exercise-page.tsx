@@ -126,7 +126,7 @@ export default function ExercisePage() {
         >
           {exercise && (
             <EditorPanel
-              code={exercise.boilerplate.code.replace(/\/n/g, "\n")}
+              code={exercise.boilerplate.code.replace(/\\n/g, "\n")}
               language={exercise.language.toLowerCase()}
               exerciseId={exercise.id.toString()}
               exercise={{

@@ -119,7 +119,7 @@ export const useCodeEditorStore = create<CodeEditorState>((set, get) => {
           },
         };
 
-        const dataa = await axios.post("/exercises/submit", exerciseDto);
+        const dataa = await axios.post("/submit", exerciseDto);
         console.log(dataa.data)
         const data = await response.json();
 

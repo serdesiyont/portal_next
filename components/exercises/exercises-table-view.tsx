@@ -41,8 +41,8 @@ import { formatDistanceToNow } from "date-fns";
 
 function formatCodePreserveWhitespace(input: unknown): string {
   if (typeof input !== "string") return JSON.stringify(input, null, 2);
-  // Replace literal \n and /n with newline but keep spaces exactly
-  return input.replace(/\\n|\/n/g, "\n");
+  // Replace literal \n with newline but keep spaces exactly
+  return input.replace(/\\n/g, "\n");
 }
 
 function stringifyMapPreserving(
@@ -153,9 +153,7 @@ export default function ExercisesTableView() {
 
   // Helpers to map API -> form
   const decodeText = (val: unknown) =>
-    typeof val === "string"
-      ? val.replaceAll("/n", "\n").replaceAll("\\n", "\n")
-      : "";
+    typeof val === "string" ? val.replaceAll("\\n", "\n") : "";
 
   const toFormInitialData = (
     ex: ExerciseAllDto
@@ -180,14 +178,19 @@ export default function ExercisesTableView() {
       boilerText = decodeText(firstStr as any);
     }
 
-    // test cases sorted by testN
+    // merged test cases sorted by testN
     const tcRec = ex.testCases || {};
     const keys = Object.keys(tcRec).sort((a, b) => {
       const na = parseInt(a.replace(/\D/g, "")) || 0;
       const nb = parseInt(b.replace(/\D/g, "")) || 0;
       return na - nb;
     });
-    const testCases = keys.map((k) => decodeText((tcRec as any)[k]));
+    const testCases: string[] = keys.map((k) =>
+      decodeText((tcRec as any)[k]?.test)
+    );
+    const output: string[] = keys.map((k) =>
+      decodeText((tcRec as any)[k]?.output)
+    );
 
     return {
       title: ex.title,
@@ -197,6 +200,7 @@ export default function ExercisesTableView() {
       time,
       boilerplate: boilerText || "# Write your boilerplate here\n",
       testCases: testCases.length ? testCases : [""],
+      output: output.length ? output : [""],
     };
   };
 
@@ -233,7 +237,7 @@ export default function ExercisesTableView() {
               <TableHead className="w-48">Schedule</TableHead>
               <TableHead className="w-[160px]">Posted By</TableHead>
               <TableHead className="w-[180px]">Boilerplate</TableHead>
-              <TableHead className="w-[180px]">Test Cases</TableHead>
+              <TableHead className="w-[180px]">Tests</TableHead>
               <TableHead className="w-16 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -306,15 +310,35 @@ export default function ExercisesTableView() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="cursor-help  text-muted-foreground underline-offset-4">
-                          Hover
+                          Tests
                         </span>
                       </TooltipTrigger>
                       <TooltipContent className="max-w-[520px] p-0">
                         <ScrollArea className="h-[300px] w-[520px] p-3 text-sm">
                           <pre className="whitespace-pre-wrap break-words">
-                            {stringifyMapPreserving(
-                              ex.testCases as Record<string, unknown>
-                            )}
+                            {(() => {
+                              const obj = ex.testCases as Record<string, any>;
+                              const keys = Object.keys(obj || {}).sort(
+                                (a, b) => {
+                                  const na =
+                                    parseInt(a.replace(/\D/g, "")) || 0;
+                                  const nb =
+                                    parseInt(b.replace(/\D/g, "")) || 0;
+                                  return na - nb;
+                                }
+                              );
+                              const parts = keys.map((k) => {
+                                const item = obj[k] || {};
+                                const test = formatCodePreserveWhitespace(
+                                  (item as any).test
+                                );
+                                const out = formatCodePreserveWhitespace(
+                                  (item as any).output
+                                );
+                                return `${k} test:\n${test}\n\n${k} output:\n${out}`;
+                              });
+                              return parts.join("\n\n---\n\n");
+                            })()}
                           </pre>
                         </ScrollArea>
                       </TooltipContent>
@@ -405,16 +429,21 @@ export default function ExercisesTableView() {
                 ? new Date(`${form.date}T${form.time}:00.000Z`).toISOString()
                 : undefined;
             const boilerplate = {
-              code: (form.boilerplate ?? "").replaceAll("\n", "/n"),
+              code: (form.boilerplate ?? "").replace(/\r?\n/g, "\n"),
             } as Record<string, unknown>;
-            const testCases: Record<string, unknown> = {};
+            // merged tests
+            const testCases: Record<string, { test: string; output: string }> =
+              {};
             (form.testCases || []).forEach((val, idx) => {
               const key = `test${idx + 1}`;
-              testCases[key] = (val ?? "").replaceAll("\n", "/n");
+              testCases[key] = {
+                test: (val ?? "").replace(/\r?\n/g, "\n"),
+                output: (form.output?.[idx] ?? "").replace(/\r?\n/g, "\n"),
+              };
             });
 
             if (sheetMode === "edit" && typeof editingId === "number") {
-              await updateExercise(editingId, {
+              const res = await updateExercise(editingId, {
                 title: form.title,
                 description: form.description,
                 language: form.language,
@@ -422,9 +451,14 @@ export default function ExercisesTableView() {
                 testCases,
                 schedule,
               });
-              toast.success("Exercise updated");
+              if (res.status === 201) {
+                toast.success("Exercise updated");
+              } else {
+                toast.error("Couldn't update exercise");
+                return false;
+              }
             } else {
-              await createExercise({
+              const res = await createExercise({
                 title: form.title,
                 description: form.description,
                 language: form.language,
@@ -432,7 +466,12 @@ export default function ExercisesTableView() {
                 testCases,
                 schedule,
               });
-              toast.success("Exercise created");
+              if (res.status === 200) {
+                toast.success("Exercise created");
+              } else {
+                toast.error("Couldn't submit exercise");
+                return false;
+              }
             }
 
             await load();
@@ -441,8 +480,8 @@ export default function ExercisesTableView() {
             toast.error(
               e?.message ||
                 (sheetMode === "edit"
-                  ? "Failed to update exercise"
-                  : "Failed to create exercise")
+                  ? "Couldn't update exercise"
+                  : "Couldn't submit exercise")
             );
             return false;
           }

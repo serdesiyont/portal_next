@@ -27,7 +27,8 @@ export interface ExerciseAllDto {
     division?: string;
     role?: string;
   };
-  testCases: Record<string, unknown>;
+  // merged tests structure: { test1: { test: string, output: string }, ... }
+  testCases: Record<string, { test: unknown; output: unknown }>;
   schedule?: string; // ISO string from OffsetDateTime
 }
 
@@ -72,14 +73,15 @@ export async function createExercise(payload: {
   description: string;
   language: string;
   boilerplate: Record<string, unknown>;
-  testCases: Record<string, unknown>;
+  // merged tests payload
+  testCases: Record<string, { test: string; output: string }>;
   schedule?: string; // ISO string
-}): Promise<any> {
+}): Promise<{ status: number; data: any }> {
   try {
     const res = await axios.post("/exercises", payload, {
       headers: { "Content-Type": "application/json" },
     });
-    return res.data;
+    return { status: res.status, data: res.data };
   } catch (error: any) {
     console.error("Failed to create exercise:", error);
     throw new Error(error?.message || "Failed to create exercise");
@@ -93,15 +95,16 @@ export async function updateExercise(
     description: string;
     language: string;
     boilerplate: Record<string, unknown>;
-    testCases: Record<string, unknown>;
+    // merged tests payload
+    testCases: Record<string, { test: string; output: string }>;
     schedule?: string; // ISO string
   }
-): Promise<any> {
+): Promise<{ status: number; data: any }> {
   try {
     const res = await axios.put(`/exercises/${id}`, payload, {
       headers: { "Content-Type": "application/json" },
     });
-    return res.data;
+    return { status: res.status, data: res.data };
   } catch (error: any) {
     console.error(`Failed to update exercise ${id}:`, error);
     throw new Error(error?.message || "Failed to update exercise");

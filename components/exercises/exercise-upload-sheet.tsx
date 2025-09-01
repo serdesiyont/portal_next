@@ -31,6 +31,7 @@ export type CreateExerciseForm = {
   time: string; // HH:MM
   boilerplate: string; // plain code text
   testCases: string[]; // dynamic tests values; test1 = index 0
+  output: string[];
 };
 
 export default function ExerciseUploadSheet({
@@ -59,6 +60,7 @@ export default function ExerciseUploadSheet({
     time: "",
     boilerplate: "# Write your boilerplate here\n",
     testCases: [""],
+    output: [""],
   });
 
   // Hydrate form when opening in edit mode (or whenever initialData provided)
@@ -76,6 +78,10 @@ export default function ExerciseUploadSheet({
         initialData.testCases && initialData.testCases.length > 0
           ? initialData.testCases
           : prev.testCases ?? [""],
+      output:
+        initialData.output && initialData.output.length > 0
+          ? initialData.output
+          : prev.output ?? [""],
     }));
   }, [open, initialData]);
 
@@ -123,6 +129,22 @@ export default function ExerciseUploadSheet({
     }, 0);
   };
 
+  const handleOutputTab = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+    index: number
+  ) => {
+    if (e.key !== "Tab") return;
+    e.preventDefault();
+    const el = e.currentTarget;
+    const { newValue, caret } = insertTabAtSelection(el);
+    updateOutput(index, newValue);
+    setTimeout(() => {
+      try {
+        el.selectionStart = el.selectionEnd = caret;
+      } catch {}
+    }, 0);
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -138,21 +160,33 @@ export default function ExerciseUploadSheet({
     });
   };
 
-  const addTestCase = () => {
-    setData((d) => ({ ...d, testCases: [...d.testCases, ""] }));
+  const updateOutput = (index: number, value: string) => {
+    setData((d) => {
+      const arr = [...d.output];
+      arr[index] = value;
+      return { ...d, output: arr };
+    });
   };
 
-  const removeTestCase = (index: number) => {
+  const addTestPair = () => {
+    setData((d) => ({
+      ...d,
+      testCases: [...d.testCases, ""],
+      output: [...d.output, ""],
+    }));
+  };
+
+  const removeTestPair = (index: number) => {
     setData((d) => {
       if (d.testCases.length <= 1) {
         // keep at least one row; just clear it
-        const arr = [""];
-        return { ...d, testCases: arr };
+        return { ...d, testCases: [""], output: [""] };
       }
-      const arr = d.testCases
+      const testCases = d.testCases
         .slice(0, index)
         .concat(d.testCases.slice(index + 1));
-      return { ...d, testCases: arr };
+      const output = d.output.slice(0, index).concat(d.output.slice(index + 1));
+      return { ...d, testCases, output };
     });
   };
 
@@ -160,6 +194,10 @@ export default function ExerciseUploadSheet({
     e.preventDefault();
     if (!data.title || !data.description || !data.language || !data.boilerplate)
       return;
+    if (data.testCases.length !== data.output.length) {
+      setErrorMsg("Number of test cases must match number of outputs.");
+      return;
+    }
     setSubmitting(true);
     setErrorMsg("");
     try {
@@ -167,9 +205,7 @@ export default function ExerciseUploadSheet({
       if (onSubmit) ok = await onSubmit(data);
       if (ok === false) {
         setErrorMsg(
-          `Failed to ${
-            mode === "edit" ? "update" : "create"
-          } exercise. Please check your inputs and try again.`
+          mode === "edit" ? "Couldn't update form" : "Couldn't submit form"
         );
         return;
       }
@@ -184,13 +220,13 @@ export default function ExerciseUploadSheet({
         time: "",
         boilerplate: "# Write your boilerplate here\n",
         testCases: [""],
+        output: [""],
       });
       setSuccess(false);
-    } catch (err) {
+    } catch (err: any) {
       setErrorMsg(
-        `Failed to ${
-          mode === "edit" ? "update" : "create"
-        } exercise. Please try again.`
+        err?.message ||
+          (mode === "edit" ? "Couldn't update form" : "Couldn't submit form")
       );
     } finally {
       setSubmitting(false);
@@ -275,8 +311,8 @@ export default function ExerciseUploadSheet({
                           <SelectValue placeholder="Select language" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="JS">JavaScript</SelectItem>
-                          <SelectItem value="TS">TypeScript</SelectItem>
+                          <SelectItem value="JAVASCRIPT">JavaScript</SelectItem>
+                          <SelectItem value="TYPESCRIPT">TypeScript</SelectItem>
                           <SelectItem value="PYTHON">Python</SelectItem>
                           <SelectItem value="PHP">PHP</SelectItem>
                           <SelectItem value="DART">Dart</SelectItem>
@@ -349,7 +385,7 @@ export default function ExerciseUploadSheet({
                             type="button"
                             variant="outline"
                             size="sm"
-                            onClick={() => removeTestCase(i)}
+                            onClick={() => removeTestPair(i)}
                             aria-label="Remove test"
                             disabled={data.testCases.length === 1}
                           >
@@ -360,7 +396,7 @@ export default function ExerciseUploadSheet({
                               type="button"
                               variant="outline"
                               size="sm"
-                              onClick={addTestCase}
+                              onClick={addTestPair}
                               aria-label="Add test"
                             >
                               <Plus className="size-4" />
@@ -372,6 +408,55 @@ export default function ExerciseUploadSheet({
                     <p className="text-xs text-muted-foreground">
                       Add multiple tests as needed. Newlines will be encoded
                       automatically.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Outputs</Label>
+                    <div className="space-y-2">
+                      {data.output.map((out, i) => (
+                        <div
+                          key={i}
+                          className="grid grid-cols-[80px_1fr_auto_auto] items-center gap-2"
+                        >
+                          <span className="text-sm text-muted-foreground">{`output${
+                            i + 1
+                          }`}</span>
+                          <Textarea
+                            value={out}
+                            onChange={(e) => updateOutput(i, e.target.value)}
+                            placeholder="Enter expected output for the corresponding test"
+                            className="font-mono min-h-0"
+                            rows={3}
+                            onKeyDown={(e) => handleOutputTab(e, i)}
+                            required={i === 0}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeTestPair(i)}
+                            aria-label="Remove output"
+                            disabled={data.output.length === 1}
+                          >
+                            <Minus className="size-4" />
+                          </Button>
+                          {i === data.output.length - 1 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={addTestPair}
+                              aria-label="Add output"
+                            >
+                              <Plus className="size-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      The number of outputs must match the number of test cases.
                     </p>
                   </div>
                 </CardContent>
