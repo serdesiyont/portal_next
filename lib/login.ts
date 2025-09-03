@@ -9,6 +9,7 @@ export async function login(formData: { email: string; password: string }) {
     localStorage.setItem("DIVISION", response.data.DIVISION);
     cookies.set("NAME", response.data.NAME);
     cookies.set("EMAIL", response.data.EMAIL);
+    cookies.set("HAS_API_KEY", response.data.HAS_API_KEY);
     cookies.set("access_token", response.data.ACCESS_TOKEN, { expires: 1 });
     cookies.set("refresh_token", response.data.REFRESH_TOKEN, { expires: 7 });
 

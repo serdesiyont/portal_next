@@ -104,9 +104,15 @@ function ThemeSelector() {
         {/* hover state bg decorator */}
         <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity" />
 
-        <Palette className="w-4 h-4 transition-colors" style={{ color: ui.muted }} />
+        <Palette
+          className="w-4 h-4 transition-colors"
+          style={{ color: ui.muted }}
+        />
 
-        <span className="min-w-[80px] text-left transition-colors" style={{ color: ui.text }}>
+        <span
+          className="min-w-[80px] text-left transition-colors"
+          style={{ color: ui.text }}
+        >
           {currentTheme?.label}
         </span>
 
@@ -114,7 +120,10 @@ function ThemeSelector() {
 
         <div
           className="relative w-4 h-4 rounded-full transition-colors"
-          style={{ background: currentTheme?.color, border: `1px solid ${ui.border}` }}
+          style={{
+            background: currentTheme?.color,
+            border: `1px solid ${ui.border}`,
+          }}
         />
       </motion.button>
 
@@ -126,10 +135,19 @@ function ThemeSelector() {
             exit={{ opacity: 0, y: 8, scale: 0.96 }}
             transition={{ duration: 0.2 }}
             className="absolute top-full left-0 mt-2 w-full min-w-[240px] backdrop-blur-xl rounded-xl shadow-2xl py-2 z-50"
-            style={{ backgroundColor: ui.cardBg, border: `1px solid ${ui.border}` }}
+            style={{
+              backgroundColor: ui.cardBg,
+              border: `1px solid ${ui.border}`,
+            }}
           >
-            <div className="px-2 pb-2 mb-2" style={{ borderBottom: `1px solid ${ui.border}` }}>
-              <p className="text-xs font-medium px-2" style={{ color: ui.muted }}>
+            <div
+              className="px-2 pb-2 mb-2"
+              style={{ borderBottom: `1px solid ${ui.border}` }}
+            >
+              <p
+                className="text-xs font-medium px-2"
+                style={{ color: ui.muted }}
+              >
                 Select Theme
               </p>
             </div>
@@ -142,11 +160,7 @@ function ThemeSelector() {
                 transition={{ delay: index * 0.1 }}
                 className={`
                 relative group w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-200
-                ${
-                  theme === t.id
-                    ? "bg-blue-500/10 text-blue-400"
-                    : ""
-                }
+                ${theme === t.id ? "bg-blue-500/10 text-blue-400" : ""}
               `}
                 style={{ color: ui.text }}
                 onClick={() => setTheme(t.id)}
@@ -161,26 +175,31 @@ function ThemeSelector() {
                 <div
                   className={`
                 flex items-center justify-center size-8 rounded-lg
-                ${
-                  theme === t.id
-                    ? "bg-blue-500/10 text-blue-400"
-                    : ""
-                }
+                ${theme === t.id ? "bg-blue-500/10 text-blue-400" : ""}
                 group-hover:scale-110 transition-all duration-200
               `}
-                  style={{ backgroundColor: theme === t.id ? undefined : ui.panelBg, color: ui.muted }}
+                  style={{
+                    backgroundColor: theme === t.id ? undefined : ui.panelBg,
+                    color: ui.muted,
+                  }}
                 >
                   {THEME_ICONS[t.id] || <CircleOff className="w-4 h-4" />}
                 </div>
                 {/* label */}
-                <span className="flex-1 text-left transition-colors" style={{ color: ui.text }}>
+                <span
+                  className="flex-1 text-left transition-colors"
+                  style={{ color: ui.text }}
+                >
                   {t.label}
                 </span>
 
                 {/* color indicator */}
                 <div
                   className="relative size-4 rounded-full transition-colors"
-                  style={{ background: t.color, border: `1px solid ${ui.border}` }}
+                  style={{
+                    background: t.color,
+                    border: `1px solid ${ui.border}`,
+                  }}
                 />
 
                 {/* active theme border */}

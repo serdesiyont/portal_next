@@ -26,6 +26,7 @@ import confetti from "canvas-confetti";
 import ProgressBar from "@/components/ui/progress-bar";
 import Link from "next/link";
 import { register } from "@/lib/register";
+import { sendOtp, verifyOtp } from "@/lib/otp";
 
 const PRIMARY_COLOR = "var(--primary)"; // Linked to index.css
 const SECONDARY_COLOR = "var(--chart-2)"; // Linked to index.css
@@ -33,10 +34,12 @@ const DISABLED_COLOR = "var(--muted)"; // Linked to index.css
 
 // Refactor VerifyEmailText to simulate OTP sending and verification
 const VerifyEmailText = ({
+  name,
   email,
   onVerified,
   isVerified,
 }: {
+  name: string;
   email: string;
   onVerified: () => void;
   isVerified: boolean;
@@ -47,8 +50,21 @@ const VerifyEmailText = ({
   const [error, setError] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [otpSendCount, setOtpSendCount] = useState(0);
+  const [otpSent, setOtpSent] = useState(false);
+  const MAX_OTP_SENDS = 3; // 1 initial + 2 resends
 
   const isValidEmail = (email: string) => /^\S+@\S+\.\S+$/.test(email);
+
+  useEffect(() => {
+    // Reset OTP state if email changes
+    setOtpSent(false);
+    setOtpSendCount(0);
+    setResendCooldown(0);
+    setShowOtpPopup(false);
+    setOtpValue("");
+    setError("");
+  }, [email]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | undefined;
@@ -61,14 +77,26 @@ const VerifyEmailText = ({
   }, [resendCooldown]);
 
   const handleSendOtp = async () => {
-    if (!isValidEmail(email)) return;
+    if (
+      !isValidEmail(email) ||
+      resendCooldown > 0 ||
+      otpSendCount >= MAX_OTP_SENDS
+    )
+      return;
     setIsSendingOtp(true);
     try {
-      // Simulate OTP sending
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setShowOtpPopup(true);
-      setResendCooldown(30);
-      setError("");
+      const res = await sendOtp(name, email, "register");
+      const data = await res.json();
+
+      if (res.ok && data.status === "SENT") {
+        if (!showOtpPopup) setShowOtpPopup(true);
+        setResendCooldown(30);
+        setError("");
+        setOtpSendCount((prev) => prev + 1);
+        setOtpSent(true);
+      } else {
+        setError(data.error || "Failed to send OTP. Please try again.");
+      }
     } catch {
       setError("Failed to send OTP. Please try again.");
     } finally {
@@ -80,13 +108,21 @@ const VerifyEmailText = ({
     if (otpValue.length !== 6) return;
     setLoading(true);
     try {
-      // Simulate OTP verification
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (otpValue === "123456") {
+      const code = parseInt(otpValue, 10);
+      const res = await verifyOtp(email, code, "register");
+      const data = await res.json();
+
+      if (res.ok && data.status === "verified") {
         onVerified();
         setShowOtpPopup(false);
-      } else {
+        setOtpSent(false);
+      } else if (data.status === "failed") {
         setError("Invalid OTP code. Try again.");
+      } else if (data.status === "expired") {
+        setError("OTP code has expired. Please request a new one.");
+        setOtpSent(false);
+      } else {
+        setError(data.error || "Verification failed. Please try again.");
       }
     } catch {
       setError("Verification failed. Please try again.");
@@ -95,14 +131,29 @@ const VerifyEmailText = ({
     }
   };
 
+  const handleVerifyClick = () => {
+    if (isVerified) return;
+
+    if (otpSent) {
+      setShowOtpPopup(true);
+    } else {
+      handleSendOtp();
+    }
+  };
+
+  const isClickable =
+    isValidEmail(email) &&
+    !isVerified &&
+    (otpSent || (resendCooldown === 0 && otpSendCount < MAX_OTP_SENDS));
+
   return (
     <div className="relative mt-2">
       <span
-        onClick={!isVerified ? handleSendOtp : undefined}
-        className={`cursor-pointer text-sm font-medium ${
-          isValidEmail(email) && !isVerified
-            ? "text-[#10B981]"
-            : "text-gray-400"
+        onClick={isClickable ? handleVerifyClick : undefined}
+        className={`text-sm font-medium ${
+          isClickable
+            ? "cursor-pointer text-[#10B981]"
+            : "cursor-not-allowed text-gray-400"
         } ${isSendingOtp ? "opacity-70" : ""}`}
       >
         {isVerified ? (
@@ -112,6 +163,10 @@ const VerifyEmailText = ({
           </span>
         ) : isSendingOtp ? (
           <Loader2 className="w-4 h-4 animate-spin" />
+        ) : resendCooldown > 0 ? (
+          `Resend in ${resendCooldown}s`
+        ) : otpSendCount >= MAX_OTP_SENDS ? (
+          "Max attempts reached"
         ) : (
           "Verify Email"
         )}
@@ -163,11 +218,34 @@ const VerifyEmailText = ({
 
               <Button
                 onClick={handleVerifyOtp}
-                className="w-full"
+                className="w-full mb-4"
                 disabled={loading || otpValue.length !== 6}
               >
                 {loading ? "Verifying..." : "Verify"}
               </Button>
+
+              <div className="flex justify-between items-center">
+                <div className="text-left text-sm">
+                  <button
+                    onClick={handleSendOtp}
+                    disabled={
+                      resendCooldown > 0 || otpSendCount >= MAX_OTP_SENDS
+                    }
+                    className="disabled:cursor-not-allowed disabled:text-gray-400 text-[#10B981] font-medium cursor-pointer"
+                  >
+                    {resendCooldown > 0
+                      ? `Resend in ${resendCooldown}s`
+                      : otpSendCount >= MAX_OTP_SENDS
+                      ? "Max resend attempts reached"
+                      : "Resend Code"}
+                  </button>
+                  {/* {otpSendCount > 0 && otpSendCount < MAX_OTP_SENDS && (
+                  // <p className="text-xs text-gray-500 mt-1">
+                  //   {MAX_OTP_SENDS - otpSendCount} attempts remaining
+                  // </p>
+                )} */}
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -186,7 +264,7 @@ export function RegisterForm() {
     additional: "",
   });
 
-  const [isEmailVerified, setIsEmailVerified] = useState(true);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -202,6 +280,7 @@ export function RegisterForm() {
     return (
       formData.name &&
       isValidEmail(formData.email) &&
+      isEmailVerified &&
       formData.phone_num &&
       formData.gender &&
       formData.division &&
@@ -366,6 +445,7 @@ export function RegisterForm() {
 
                       {isValidEmail(formData.email) && (
                         <VerifyEmailText
+                          name={formData.name}
                           email={formData.email}
                           onVerified={() => setIsEmailVerified(true)}
                           isVerified={isEmailVerified}

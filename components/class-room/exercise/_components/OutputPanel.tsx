@@ -162,15 +162,24 @@ function OutputPanel() {
   }, [theme]);
 
   return (
-    <div className="relative p-4" style={{ backgroundColor: ui.panelBg, border: `1px solid ${ui.border}` }}>
+    <div
+      className="relative p-4"
+      style={{ backgroundColor: ui.panelBg, border: `1px solid ${ui.border}` }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div
             className="flex items-center justify-center w-6 h-6 rounded-lg"
-            style={{ backgroundColor: ui.cardBg, border: `1px solid ${ui.border}` }}
+            style={{
+              backgroundColor: ui.cardBg,
+              border: `1px solid ${ui.border}`,
+            }}
           >
-            <Terminal className="w-4 h-4" style={{ color: ui.accent, opacity: 0.9 }} />
+            <Terminal
+              className="w-4 h-4"
+              style={{ color: ui.accent, opacity: 0.9 }}
+            />
           </div>
           <span className="text-sm font-medium" style={{ color: ui.text }}>
             Output
@@ -181,11 +190,18 @@ function OutputPanel() {
           <button
             onClick={handleCopy}
             className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg transition-all"
-            style={{ color: ui.muted, backgroundColor: ui.cardBg, border: `1px solid ${ui.border}` }}
+            style={{
+              color: ui.muted,
+              backgroundColor: ui.cardBg,
+              border: `1px solid ${ui.border}`,
+            }}
           >
             {isCopied ? (
               <>
-                <CheckCircle className="w-3.5 h-3.5" style={{ color: ui.accent }} />
+                <CheckCircle
+                  className="w-3.5 h-3.5"
+                  style={{ color: ui.accent }}
+                />
                 Copied!
               </>
             ) : (
@@ -202,16 +218,26 @@ function OutputPanel() {
       <div className="relative">
         <div
           className="relative rounded-xl p-4 h-full min-h-[600px] overflow-auto font-mono text-sm"
-          style={{ backgroundColor: `${ui.cardBg}80`, border: `1px solid ${ui.border}`, color: ui.text }}
+          style={{
+            backgroundColor: `${ui.cardBg}80`,
+            border: `1px solid ${ui.border}`,
+            color: ui.text,
+          }}
         >
           {isRunning ? (
             <RunningCodeSkeleton />
           ) : error ? (
-            <div className="flex items-start gap-3" style={{ color: "#fca5a5" }}>
+            <div
+              className="flex items-start gap-3"
+              style={{ color: "#fca5a5" }}
+            >
               <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-1" />
               <div className="space-y-1">
                 <div className="font-medium">Execution Error</div>
-                <pre className="whitespace-pre-wrap" style={{ color: "#fca5a5" }}>
+                <pre
+                  className="whitespace-pre-wrap"
+                  style={{ color: "#fca5a5" }}
+                >
                   {error}
                 </pre>
               </div>
@@ -225,7 +251,8 @@ function OutputPanel() {
                     const passed = testResults.filter(
                       (t) => t.status === "PASSED"
                     ).length;
-                    const summaryColor = passed === total ? "#34d399" : "#f87171";
+                    const summaryColor =
+                      passed === total ? "#34d399" : "#f87171";
                     return (
                       <div className="text-sm" style={{ color: summaryColor }}>
                         {passed}/{total} passed
@@ -234,12 +261,16 @@ function OutputPanel() {
                   })()}
 
                   {testResults.map((t, i) => (
-                    <div key={(t.name || "test") + i} className="rounded-md bg-transparent">
+                    <div
+                      key={(t.name || "test") + i}
+                      className="rounded-md bg-transparent"
+                    >
                       {t.status === "PASSED" ? (
                         <div style={{ color: "#34d399" }}>passed</div>
                       ) : (
                         <div style={{ color: "#f87171" }}>
-                          failed - expected: {t.expected ?? ""} | output: {t.code ?? ""}
+                          failed - expected: {t.expected ?? ""} | output:{" "}
+                          {t.code ?? ""}
                         </div>
                       )}
                     </div>
@@ -252,14 +283,22 @@ function OutputPanel() {
               )}
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center" style={{ color: ui.muted }}>
+            <div
+              className="h-full flex flex-col items-center justify-center"
+              style={{ color: ui.muted }}
+            >
               <div
                 className="flex items-center justify-center w-12 h-12 rounded-xl mb-4"
-                style={{ backgroundColor: `${ui.cardBg}80`, border: `1px solid ${ui.border}` }}
+                style={{
+                  backgroundColor: `${ui.cardBg}80`,
+                  border: `1px solid ${ui.border}`,
+                }}
               >
                 <Clock className="w-6 h-6" />
               </div>
-              <p className="text-center">Run your code to see the output here...</p>
+              <p className="text-center">
+                Run your code to see the output here...
+              </p>
             </div>
           )}
         </div>

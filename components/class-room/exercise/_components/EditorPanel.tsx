@@ -128,10 +128,7 @@ function EditorPanel({
           >
             {/* <Image src={"/" + language + ".png"} alt="Logo" width={24} height={24} /> */}
           </div>
-          <span
-            className="text-sm font-medium"
-            style={{ color: ui.text }}
-          >
+          <span className="text-sm font-medium" style={{ color: ui.text }}>
             Code Editor
           </span>
         </div>

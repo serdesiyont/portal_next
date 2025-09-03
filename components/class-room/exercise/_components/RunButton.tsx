@@ -26,13 +26,33 @@ function RunButton({
     };
     switch (theme) {
       case "vs-light":
-        return { accent: "#2563eb", accentTo: "#1d4ed8", textOnAccent: "#ffffff", ring: "rgba(0,0,0,0.08)" };
+        return {
+          accent: "#2563eb",
+          accentTo: "#1d4ed8",
+          textOnAccent: "#ffffff",
+          ring: "rgba(0,0,0,0.08)",
+        };
       case "github-dark":
-        return { accent: "#58a6ff", accentTo: "#1f6feb", textOnAccent: "#0d1117", ring: "rgba(255,255,255,0.08)" };
+        return {
+          accent: "#58a6ff",
+          accentTo: "#1f6feb",
+          textOnAccent: "#0d1117",
+          ring: "rgba(255,255,255,0.08)",
+        };
       case "monokai":
-        return { accent: "#a6e22e", accentTo: "#7ec10a", textOnAccent: "#272822", ring: "rgba(255,255,255,0.08)" };
+        return {
+          accent: "#a6e22e",
+          accentTo: "#7ec10a",
+          textOnAccent: "#272822",
+          ring: "rgba(255,255,255,0.08)",
+        };
       case "solarized-dark":
-        return { accent: "#268bd2", accentTo: "#0f6aa6", textOnAccent: "#002b36", ring: "rgba(255,255,255,0.08)" };
+        return {
+          accent: "#268bd2",
+          accentTo: "#0f6aa6",
+          textOnAccent: "#002b36",
+          ring: "rgba(255,255,255,0.08)",
+        };
       default:
         return base;
     }
