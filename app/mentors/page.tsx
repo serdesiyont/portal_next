@@ -11,7 +11,7 @@ import { DataTable } from "@/components/data-table";
 import data from "./data.json";
 import ResourceTableView from "@/components/resources/resource-table-view";
 import { Button } from "@/components/ui/button";
-import ExercisesTableView from "@/components/exercises/exercises-table-view";
+import ExercisesTableView from "@/components/mentor/exercises/exercises-table-view";
 
 export default function Page() {
   const [hash, setHash] = React.useState<string>("#dashboard");

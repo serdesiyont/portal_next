@@ -36,7 +36,7 @@ import {
 import { MoreVertical, Pencil, Trash2, UploadCloud } from "lucide-react";
 import ExerciseUploadSheet, {
   CreateExerciseForm,
-} from "@/components/exercises/exercise-upload-sheet";
+} from "@/components/mentor/exercises/exercise-upload-sheet";
 import { formatDistanceToNow } from "date-fns";
 
 function formatCodePreserveWhitespace(input: unknown): string {
