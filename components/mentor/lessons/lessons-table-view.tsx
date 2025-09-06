@@ -25,9 +25,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import LessonPreviewSheet from "@/components/lessons/lesson-preview-sheet";
-import LessonUploadSheet from "@/components/lessons/lesson-upload-sheet";
-import LessonBuilderDialog from "@/components/lessons/lesson-builder-dialog";
+import LessonPreviewSheet from "@/components/mentor/lessons/lesson-preview-sheet";
+import LessonUploadSheet from "@/components/mentor/lessons/lesson-upload-sheet";
+import LessonBuilderDialog from "@/components/mentor/lessons/lesson-builder-dialog";
 import {
   MoreVertical,
   ExternalLink,

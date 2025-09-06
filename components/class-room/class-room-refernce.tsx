@@ -1,19 +1,27 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import ReferenceSidebar from "./reference/reference-sidebar";
 import ReferenceMainContent from "./reference/refence-main-content";
 import { fetchPdfList, type PdfDoc } from "@/lib/pdf-loader";
 import { ChatContent, ChatWidget } from "./chat-widget";
 import { Button } from "@/components/ui/button";
-import { PanelLeftIcon } from "lucide-react";
+import { PanelLeftIcon, Lock } from "lucide-react";
+import cookies from "js-cookie";
 
-export default function Reference() {
+export default function Reference({
+  hasApiKeyProp,
+}: {
+  hasApiKeyProp?: boolean;
+}) {
   const [pdfs, setPdfs] = useState<PdfDoc[]>([]);
   const [selectedPdf, setSelectedPdf] = useState<PdfDoc | null>(null);
   const [loading, setLoading] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const handleChatToggle = (isOpen: boolean) => setIsChatOpen(isOpen);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
+  const profileBtnRef = useRef<HTMLButtonElement>(null);
+  const [showApiKeyMsg, setShowApiKeyMsg] = useState(false);
 
   useEffect(() => {
     const getPdfs = async () => {
@@ -29,6 +37,41 @@ export default function Reference() {
     };
     getPdfs();
   }, []);
+
+  useEffect(() => {
+    const v = cookies.get("HAS_API_KEY");
+    const enabled = v === "true" || v === "1" || v?.toLowerCase?.() === "yes";
+    setHasApiKey(!!enabled);
+  }, []);
+
+  useEffect(() => {
+    if (typeof hasApiKeyProp === "boolean") {
+      setHasApiKey(hasApiKeyProp);
+    }
+  }, [hasApiKeyProp]);
+
+  // Helper to trigger profile button glow
+  const triggerProfileGlow = () => {
+    setShowApiKeyMsg(true);
+    const btn = document.getElementById("profile-btn");
+    if (btn) {
+      btn.classList.add(
+        "ring-4",
+        "ring-green-400",
+        "ring-offset-2",
+        "animate-pulse"
+      );
+      setTimeout(() => {
+        btn.classList.remove(
+          "ring-4",
+          "ring-green-400",
+          "ring-offset-2",
+          "animate-pulse"
+        );
+      }, 5000);
+    }
+    setTimeout(() => setShowApiKeyMsg(false), 5000);
+  };
 
   return (
     <div className="flex h-full relative flex-col md:flex-row">
@@ -65,16 +108,47 @@ export default function Reference() {
 
       {/* Chat panel / widget */}
       {isChatOpen ? (
-        <aside className="w-full md:w-[500px] flex-shrink-0 overflow-hidden border-l">
+        <aside className="w-full md:w-[500px] flex-shrink-0 overflow-hidden border-l relative">
+          {hasApiKey === false && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+              <div className="bg-background/95 border rounded-xl p-6 text-center shadow-lg w-[90%] max-w-sm relative">
+                <button
+                  className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsChatOpen(false)}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+                <h3 className="mt-2 text-base font-semibold">
+                  API Key Required
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Add Google Gemini API Key to use this feature.
+                </p>
+                <Button
+                  variant="secondary"
+                  className="mt-4"
+                  onClick={triggerProfileGlow}
+                >
+                  Go to Profile
+                </Button>
+              </div>
+            </div>
+          )}
           <ChatContent
-            onClose={() => handleChatToggle(false)}
+            onClose={() => setIsChatOpen(false)}
             showHeader={true}
-            className="h-full"
+            className={
+              hasApiKey === false ? "pointer-events-none opacity-60" : ""
+            }
           />
         </aside>
       ) : (
         <ChatWidget onChatToggle={handleChatToggle} />
       )}
+
+      {/* Profile button glow helper (invisible, just for id) */}
+      {/* The actual profile button in the navbar should have id="profile-btn" */}
 
       {/* Mobile sidebar overlay */}
       {isSidebarOpen && (

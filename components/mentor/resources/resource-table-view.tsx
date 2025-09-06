@@ -33,7 +33,7 @@ import {
   Trash2,
   UploadCloud,
 } from "lucide-react";
-import ResourceUploadSheet from "@/components/resources/resource-upload-sheet";
+import ResourceUploadSheet from "@/components/mentor/resources/resource-upload-sheet";
 
 export default function ResourceTableView() {
   const [loading, setLoading] = React.useState(true);

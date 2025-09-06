@@ -20,7 +20,7 @@ api.interceptors.request.use((config) => {
 });
 
 function isPublicEndpoint(url) {
-  const publicPaths = ["/login", "/registeration", "/otp", "/otp/verify"];
+  const publicPaths = ["/login", "/register", "/otp", "/otp/verify"];
   return publicPaths.some((path) => url.startsWith(path));
 }
 

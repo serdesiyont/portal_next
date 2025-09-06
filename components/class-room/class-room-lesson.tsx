@@ -1,15 +1,33 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import LessonSidebar from "./lesson/lesson-sidebar";
 import { ClassRoomMainContent } from "./lesson/lesson-main-content";
 import { LessonProvider } from "./lesson/LessonProvider";
 import { ChatWidget, ChatContent } from "./chat-widget";
 import { Button } from "@/components/ui/button";
-import { PanelLeftIcon } from "lucide-react";
+import { PanelLeftIcon, Lock } from "lucide-react";
+import cookies from "js-cookie";
 
-export default function ClassRoomLesson() {
+export default function ClassRoomLesson({
+  hasApiKeyProp,
+}: {
+  hasApiKeyProp?: boolean;
+}) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const handleChatToggle = (isOpen: boolean) => setIsChatOpen(isOpen);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const v = cookies.get("HAS_API_KEY");
+    const enabled = v === "true" || v === "1" || v?.toLowerCase?.() === "yes";
+    setHasApiKey(!!enabled);
+  }, []);
+
+  useEffect(() => {
+    if (typeof hasApiKeyProp === "boolean") {
+      setHasApiKey(hasApiKeyProp);
+    }
+  }, [hasApiKeyProp]);
 
   return (
     <LessonProvider>
@@ -50,7 +68,10 @@ export default function ClassRoomLesson() {
             />
           </aside>
         ) : (
-          <ChatWidget onChatToggle={handleChatToggle} />
+          <ChatWidget
+            onChatToggle={handleChatToggle}
+            canOpen={hasApiKey !== false}
+          />
         )}
 
         {/* Mobile sidebar overlay */}

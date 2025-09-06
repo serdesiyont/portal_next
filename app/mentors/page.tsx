@@ -4,12 +4,12 @@ import * as React from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import LessonsTableView from "@/components/lessons/lessons-table-view";
+import LessonsTableView from "@/components/mentor/lessons/lessons-table-view";
 import { ChartAreaInteractive } from "@/components/chart-area-interactive";
 import { SectionCards } from "@/components/section-cards";
 import { DataTable } from "@/components/data-table";
 import data from "./data.json";
-import ResourceTableView from "@/components/resources/resource-table-view";
+import ResourceTableView from "@/components/mentor/resources/resource-table-view";
 import { Button } from "@/components/ui/button";
 import ExercisesTableView from "@/components/mentor/exercises/exercises-table-view";
 
@@ -26,6 +26,7 @@ export default function Page() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
+  
   const renderContent = () => {
     switch (hash) {
       case "#lessons":

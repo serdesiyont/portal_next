@@ -10,6 +10,8 @@ export async function login(formData: { email: string; password: string }) {
     cookies.set("NAME", response.data.NAME);
     cookies.set("EMAIL", response.data.EMAIL);
     cookies.set("HAS_API_KEY", response.data.HAS_API_KEY);
+    // Store division in cookies as well so client components can access it easily
+    cookies.set("DIVISION", response.data.DIVISION);
     cookies.set("access_token", response.data.ACCESS_TOKEN, { expires: 1 });
     cookies.set("refresh_token", response.data.REFRESH_TOKEN, { expires: 7 });
 
@@ -38,6 +40,9 @@ export function logout(): boolean {
     cookies.remove("EMAIL");
     cookies.remove("access_token");
     cookies.remove("refresh_token");
+    cookies.remove("HAS_API_KEY");
+    // Remove division cookie
+    cookies.remove("DIVISION");
     return true;
   } catch (e) {
     return false;
