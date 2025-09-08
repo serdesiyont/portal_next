@@ -1,7 +1,8 @@
 import axios from "axios";
 import cookie from "js-cookie";
 
-const BASE_URL = process.env.BASE_DEV_URL || "http://localhost:8888";
+const BASE_URL =
+  process.env.BASE_DEV_URL || "http://localhost:8888";
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -19,7 +20,10 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-function isPublicEndpoint(url) {
+function isPublicEndpoint(url: string | undefined): boolean {
+  if (!url) {
+    return false;
+  }
   const publicPaths = ["/login", "/register", "/otp", "/otp/verify"];
   return publicPaths.some((path) => url.startsWith(path));
 }

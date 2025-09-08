@@ -7,12 +7,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+import { getChatResponse } from "@/lib/chat";
+import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+
 interface Message {
   id: string;
   content: string;
   sender: "user" | "ai";
   timestamp: Date;
 }
+
+const AiMessageContent = ({ content }: { content: string }) => {
+  // Custom renderer for code blocks to apply syntax highlighting
+  const CodeBlock = {
+    code({ node, inline, className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || "");
+      return !inline && match ? (
+        <SyntaxHighlighter
+          style={vscDarkPlus}
+          language={match[1]}
+          PreTag="div"
+          {...props}
+        >
+          {String(children).replace(/\n$/, "")}
+        </SyntaxHighlighter>
+      ) : (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    },
+  };
+
+  // 1. Replace custom newline {.} with markdown newline `  \n`
+  // 2. Replace custom italic {..word..} with markdown italic *word*
+  const formattedContent = content
+    .replace(/\{\*\}/g, "  \n")
+    .replace(/\{\*\*(.*?)\*\*\}/g, "*$1*");
+
+  return (
+    <ReactMarkdown components={CodeBlock}>{formattedContent}</ReactMarkdown>
+  );
+};
 
 interface ChatContentProps {
   onClose?: () => void;
@@ -29,7 +67,7 @@ export function ChatContent({
     {
       id: "1",
       content:
-        "Hello! I'm your AI assistant. How can I help you with Chroma today?",
+        "Hello! I'm your AI assistant. How can I help you with your questions today?",
       sender: "ai",
       timestamp: new Date(),
     },
@@ -46,36 +84,7 @@ export function ChatContent({
     scrollToBottom();
   }, [messages]);
 
-  const simulateAIResponse = (userMessage: string) => {
-    setIsTyping(true);
-
-    setTimeout(() => {
-      const responses = [
-        "That's a great question about Chroma! Let me help you with that.",
-        "I can help you understand how to work with vector databases in Chroma.",
-        "Here's what I know about that topic in the Chroma documentation.",
-        "Let me explain how that works in Chroma's context.",
-        "That's covered in the documentation. Here's a quick explanation:",
-        "Good question! In Chroma, you would typically approach this by...",
-        "I can walk you through the steps for that in Chroma.",
-      ];
-
-      const randomResponse =
-        responses[Math.floor(Math.random() * responses.length)];
-
-      const aiMessage: Message = {
-        id: Date.now().toString(),
-        content: randomResponse,
-        sender: "ai",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 1000 + Math.random() * 2000);
-  };
-
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
     const userMessage: Message = {
@@ -86,8 +95,64 @@ export function ChatContent({
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const messageToSend = inputValue;
     setInputValue("");
-    simulateAIResponse(inputValue);
+    setIsTyping(true);
+
+    const aiMessageId = `ai-${Date.now()}`;
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: aiMessageId,
+        content: "",
+        sender: "ai",
+        timestamp: new Date(),
+      },
+    ]);
+
+    const fullResponse = await getChatResponse({ message: messageToSend });
+
+    if (typeof fullResponse !== "string") {
+      console.error("Invalid response from getChatResponse:", fullResponse);
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMessageId
+            ? {
+                ...msg,
+                content:
+                  "Sorry, I received an invalid response from the server.",
+              }
+            : msg
+        )
+      );
+      setIsTyping(false);
+      return;
+    }
+
+    const words = fullResponse.split(" ");
+    let wordIndex = 0;
+
+    const typeWord = () => {
+      if (wordIndex < words.length) {
+        const nextWord = words[wordIndex];
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === aiMessageId
+              ? {
+                  ...msg,
+                  content: msg.content + (wordIndex > 0 ? " " : "") + nextWord,
+                }
+              : msg
+          )
+        );
+        wordIndex++;
+        setTimeout(typeWord, 50); // Faster typing speed
+      } else {
+        setIsTyping(false);
+      }
+    };
+
+    typeWord();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -129,13 +194,17 @@ export function ChatContent({
               }`}
             >
               <div
-                className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
+                className={`prose dark:prose-invert max-w-[80%] rounded-lg px-3 py-2 text-sm ${
                   message.sender === "user"
                     ? "bg-primary text-primary-foreground ml-auto"
                     : "bg-muted"
                 }`}
               >
-                <p>{message.content}</p>
+                {message.sender === "ai" ? (
+                  <AiMessageContent content={message.content} />
+                ) : (
+                  <p>{message.content}</p>
+                )}
                 <p
                   className={`text-xs mt-1 ${
                     message.sender === "user"
@@ -186,7 +255,7 @@ export function ChatContent({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask me anything about Chroma..."
+            placeholder="Ask me anything..."
             className="flex-1"
             disabled={isTyping}
           />
