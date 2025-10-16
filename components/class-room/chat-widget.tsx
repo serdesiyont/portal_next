@@ -2,15 +2,17 @@
 
 import type React from "react";
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, User } from "lucide-react";
+import { MessageCircle, X, Send, User, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-import { getChatResponse } from "@/lib/chat";
+import { getChatResponse, getChatHistory } from "@/lib/chat";
+import type { ChatHistoryItem } from "@/lib/chat";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useResizable } from "@/hooks/use-resizable";
 
 interface Message {
   id: string;
@@ -63,18 +65,50 @@ export function ChatContent({
   showHeader = true,
   className = "",
 }: ChatContentProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      content:
-        "Hello! I'm your AI assistant. How can I help you with your questions today?",
-      sender: "ai",
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      setLoadingHistory(true);
+      const history = await getChatHistory(0, 20); // Fetch more items
+      if (history && history.content && history.content.length > 0) {
+        const chatMessages = history.content
+          .reverse()
+          .flatMap((item: ChatHistoryItem) => [
+            {
+              id: `user-${item.id}`,
+              content: item.userMessage,
+              sender: "user" as const,
+              timestamp: new Date(item.createdAt),
+            },
+            {
+              id: `ai-${item.id}`,
+              content: item.aiResponse,
+              sender: "ai" as const,
+              timestamp: new Date(item.createdAt),
+            },
+          ]);
+        setMessages(chatMessages);
+      } else {
+        setMessages([
+          {
+            id: "1",
+            content:
+              "Hello! I'm your AI assistant. How can I help you with your questions today?",
+            sender: "ai",
+            timestamp: new Date(),
+          },
+        ]);
+      }
+      setLoadingHistory(false);
+    };
+
+    loadHistory();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -280,6 +314,11 @@ interface ChatWidgetProps {
 
 export function ChatWidget({ onChatToggle, canOpen = true }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const { width, handleMouseDown } = useResizable({
+    initialWidth: 384, // w-96 is 384px
+    minWidth: 320,
+    maxWidth: 800,
+  });
 
   const toggleChat = () => {
     // If trying to open and not allowed, ensure it stays closed and notify parent
@@ -309,8 +348,17 @@ export function ChatWidget({ onChatToggle, canOpen = true }: ChatWidgetProps) {
 
       {/* Floating Chat Panel - Only show when not integrated */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-96 h-[80vh] bg-background border rounded-lg shadow-2xl z-50">
-          <ChatContent onClose={toggleChat} />
+        <div
+          className="fixed bottom-6 right-6 h-[80vh] bg-background border rounded-lg shadow-2xl z-50 flex"
+          style={{ width }}
+        >
+          <div
+            onMouseDown={handleMouseDown}
+            className="flex items-center justify-center w-2 cursor-col-resize"
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <ChatContent onClose={toggleChat} className="flex-1" />
         </div>
       )}
     </>

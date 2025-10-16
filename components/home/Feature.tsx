@@ -6,21 +6,21 @@ import {
 
 const features = [
   {
-    name: "Push to deploy.",
+    name: "Build clound native websites.",
     description:
-      "Lorem ipsum, dolor sit amet consectetur adipisicing elit. Maiores impedit perferendis suscipit eaque, iste dolor cupiditate blanditiis ratione.",
+      "Design, deploy, and scale modern apps using serverless, containers, and CI/CD best practices.",
     icon: CloudArrowUpIcon,
   },
   {
-    name: "SSL certificates.",
+    name: "Secure APIs.",
     description:
-      "Anim aute id magna aliqua ad ad non deserunt sunt. Qui irure qui lorem cupidatat commodo.",
+      "Implement OAuth2, JWT, and rate limiting to protect your services and user data.",
     icon: LockClosedIcon,
   },
   {
-    name: "Database backups.",
+    name: "Master Database Orms.",
     description:
-      "Ac tincidunt sapien vehicula erat auctor pellentesque rhoncus. Et magna sit morbi lobortis.",
+      "Model data effectively and use ORMs like Prisma or SQLAlchemy to ship faster with fewer bugs.",
     icon: ServerIcon,
   },
 ];
@@ -33,15 +33,14 @@ export default function Example() {
           <div className="lg:pt-4 lg:pr-8">
             <div className="lg:max-w-lg">
               <h2 className="text-base/7 font-semibold text-indigo-400">
-                Deploy faster
+                GDG AASTU
               </h2>
               <p className="mt-2 text-4xl font-semibold tracking-tight text-pretty text-white sm:text-5xl">
-                A better workflow
+                A better learning
               </p>
               <p className="mt-6 text-lg/8 text-gray-300">
-                Lorem ipsum, dolor sit amet consectetur adipisicing elit.
-                Maiores impedit perferendis suscipit eaque, iste dolor
-                cupiditate blanditiis ratione.
+                Learn by building—hands-on sessions, curated resources, and
+                mentor support to help you ship real projects.
               </p>
               <dl className="mt-10 max-w-xl space-y-8 text-base/7 text-gray-400 lg:max-w-none">
                 {features.map((feature) => (
@@ -61,7 +60,7 @@ export default function Example() {
           </div>
           <img
             alt="Product screenshot"
-            src="https://tailwindcss.com/plus-assets/img/component-images/dark-project-app-screenshot.png"
+            src="/les_dark.png"
             width={2432}
             height={1442}
             className="w-3xl max-w-none rounded-xl shadow-xl ring-1 ring-white/10 sm:w-228 md:-ml-4 lg:-ml-0"

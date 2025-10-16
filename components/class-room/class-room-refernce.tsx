@@ -5,8 +5,15 @@ import ReferenceMainContent from "./reference/refence-main-content";
 import { fetchPdfList, type PdfDoc } from "@/lib/pdf-loader";
 import { ChatContent, ChatWidget } from "./chat-widget";
 import { Button } from "@/components/ui/button";
-import { PanelLeftIcon, Lock } from "lucide-react";
+import {
+  PanelLeftIcon,
+  Lock,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import cookies from "js-cookie";
+
+import { useResizable } from "@/hooks/use-resizable";
 
 export default function Reference({
   hasApiKeyProp,
@@ -18,10 +25,13 @@ export default function Reference({
   const [loading, setLoading] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const handleChatToggle = (isOpen: boolean) => setIsChatOpen(isOpen);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar
+  const [isDesktopSidebarVisible, setIsDesktopSidebarVisible] = useState(true);
   const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
   const profileBtnRef = useRef<HTMLButtonElement>(null);
   const [showApiKeyMsg, setShowApiKeyMsg] = useState(false);
+  const { width: chatWidth, handleMouseDown: handleChatResize } =
+    useResizable();
 
   useEffect(() => {
     const getPdfs = async () => {
@@ -92,56 +102,80 @@ export default function Reference({
       </div>
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:block w-64 border-r bg-muted/30 flex-shrink-0 overflow-y-auto">
-        <ReferenceSidebar
-          pdfs={pdfs}
-          selectedPdf={selectedPdf}
-          onSelectPdf={setSelectedPdf}
-          loading={loading}
-        />
-      </aside>
+      {isDesktopSidebarVisible && (
+        <aside className="hidden md:block w-64 border-r bg-muted/30 flex-shrink-0 overflow-y-auto">
+          <ReferenceSidebar
+            pdfs={pdfs}
+            selectedPdf={selectedPdf}
+            onSelectPdf={setSelectedPdf}
+            loading={loading}
+          />
+        </aside>
+      )}
 
       {/* Main content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto p-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="hidden md:inline-flex mb-4"
+          onClick={() => setIsDesktopSidebarVisible((v) => !v)}
+        >
+          {isDesktopSidebarVisible ? <PanelLeftClose /> : <PanelLeftOpen />}
+          <span className="sr-only">Toggle Sidebar</span>
+        </Button>
         <ReferenceMainContent selectedUrl={selectedPdf?.address} />
       </div>
 
       {/* Chat panel / widget */}
       {isChatOpen ? (
-        <aside className="w-full md:w-[500px] flex-shrink-0 overflow-hidden border-l relative">
-          {hasApiKey === false && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-              <div className="bg-background/95 border rounded-xl p-6 text-center shadow-lg w-[90%] max-w-sm relative">
-                <button
-                  className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
-                  onClick={() => setIsChatOpen(false)}
-                  aria-label="Close"
-                >
-                  ×
-                </button>
-                <h3 className="mt-2 text-base font-semibold">
-                  API Key Required
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Add Google Gemini API Key to use this feature.
-                </p>
-                <Button
-                  variant="secondary"
-                  className="mt-4"
-                  onClick={triggerProfileGlow}
-                >
-                  Go to Profile
-                </Button>
-              </div>
+        <aside
+          className="flex-shrink-0 overflow-hidden border-l relative"
+          style={{ width: chatWidth }}
+        >
+          <div className="flex h-full">
+            <div
+              className="w-1.5 cursor-col-resize bg-muted/50 hover:bg-muted transition-colors"
+              onMouseDown={handleChatResize}
+            />
+            <div className="flex-1 relative">
+              {hasApiKey === false && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+                  <div className="bg-background/95 border rounded-xl p-6 text-center shadow-lg w-[90%] max-w-sm relative">
+                    <button
+                      className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+                      onClick={() => setIsChatOpen(false)}
+                      aria-label="Close"
+                    >
+                      ×
+                    </button>
+                    <h3 className="mt-2 text-base font-semibold">
+                      API Key Required
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Add Google Gemini API Key to use this feature.
+                    </p>
+                    <Button
+                      variant="secondary"
+                      className="mt-4"
+                      onClick={triggerProfileGlow}
+                    >
+                      Go to Profile
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <ChatContent
+                onClose={() => setIsChatOpen(false)}
+                showHeader={true}
+                className={
+                  hasApiKey === false
+                    ? "pointer-events-none opacity-60 h-full"
+                    : "h-full"
+                }
+              />
             </div>
-          )}
-          <ChatContent
-            onClose={() => setIsChatOpen(false)}
-            showHeader={true}
-            className={
-              hasApiKey === false ? "pointer-events-none opacity-60" : ""
-            }
-          />
+          </div>
         </aside>
       ) : (
         <ChatWidget onChatToggle={handleChatToggle} />

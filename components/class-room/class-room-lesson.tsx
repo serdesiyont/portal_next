@@ -4,8 +4,15 @@ import { ClassRoomMainContent } from "./lesson/lesson-main-content";
 import { LessonProvider } from "./lesson/LessonProvider";
 import { ChatWidget, ChatContent } from "./chat-widget";
 import { Button } from "@/components/ui/button";
-import { PanelLeftIcon, Lock } from "lucide-react";
+import {
+  PanelLeftIcon,
+  Lock,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import cookies from "js-cookie";
+
+import { useResizable } from "@/hooks/use-resizable";
 
 export default function ClassRoomLesson({
   hasApiKeyProp,
@@ -14,8 +21,11 @@ export default function ClassRoomLesson({
 }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const handleChatToggle = (isOpen: boolean) => setIsChatOpen(isOpen);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile sidebar
+  const [isDesktopSidebarVisible, setIsDesktopSidebarVisible] = useState(true);
   const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
+  const { width: chatWidth, handleMouseDown: handleChatResize } =
+    useResizable();
 
   useEffect(() => {
     const v = cookies.get("HAS_API_KEY");
@@ -49,23 +59,45 @@ export default function ClassRoomLesson({
         </div>
 
         {/* Desktop sidebar */}
-        <aside className="hidden md:block w-64 border-r bg-muted/30 flex-shrink-0 overflow-y-auto">
-          <LessonSidebar />
-        </aside>
+        {isDesktopSidebarVisible && (
+          <aside className="hidden md:block w-64 border-r bg-muted/30 flex-shrink-0 overflow-y-auto">
+            <LessonSidebar />
+          </aside>
+        )}
 
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto mb-6">
+        <div className="flex-1 overflow-y-auto mb-6 p-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hidden md:inline-flex mb-4"
+            onClick={() => setIsDesktopSidebarVisible((v) => !v)}
+          >
+            {isDesktopSidebarVisible ? <PanelLeftClose /> : <PanelLeftOpen />}
+            <span className="sr-only">Toggle Sidebar</span>
+          </Button>
           <ClassRoomMainContent />
         </div>
 
         {/* Chat Widget/Panel */}
         {isChatOpen ? (
-          <aside className="w-full md:w-[500px] flex-shrink-0 overflow-hidden border-l">
-            <ChatContent
-              onClose={() => handleChatToggle(false)}
-              showHeader={true}
-              className="h-full"
-            />
+          <aside
+            className="flex-shrink-0 overflow-hidden border-l"
+            style={{ width: chatWidth }}
+          >
+            <div className="flex h-full">
+              <div
+                className="w-1.5 cursor-col-resize bg-muted/50 hover:bg-muted transition-colors"
+                onMouseDown={handleChatResize}
+              />
+              <div className="flex-1">
+                <ChatContent
+                  onClose={() => handleChatToggle(false)}
+                  showHeader={true}
+                  className="h-full"
+                />
+              </div>
+            </div>
           </aside>
         ) : (
           <ChatWidget

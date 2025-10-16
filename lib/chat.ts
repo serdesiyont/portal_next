@@ -22,3 +22,54 @@ export const getChatResponse = async (
     return "Sorry, I encountered an error. Please try again.";
   }
 };
+
+export interface ChatHistoryItem {
+  id: number;
+  userMessage: string;
+  aiResponse: string;
+  createdAt: string;
+}
+
+export interface Page<T> {
+  content: T[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      sorted: boolean;
+      unsorted: boolean;
+      empty: boolean;
+    };
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+  size: number;
+  number: number;
+  sort: {
+    sorted: boolean;
+    unsorted: boolean;
+    empty: boolean;
+  };
+  first: boolean;
+  numberOfElements: number;
+  empty: boolean;
+}
+
+export async function getChatHistory(
+  page = 0,
+  size = 10
+): Promise<Page<ChatHistoryItem> | null> {
+  try {
+    const response = await api.get<Page<ChatHistoryItem>>("/chat", {
+      params: { page, size },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error getting chat history:", error);
+    return null;
+  }
+}
