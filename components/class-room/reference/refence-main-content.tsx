@@ -1,5 +1,12 @@
 "use client";
-import PdfViewer from "./PdfViewer";
+import dynamic from "next/dynamic";
+
+const PdfViewer = dynamic(() => import("./PdfViewer"), {
+  ssr: false,
+  loading: () => (
+    <div className="p-6 text-sm text-muted-foreground">Loading PDF…</div>
+  ),
+});
 
 export default function ReferenceMainContent({
   selectedUrl,
